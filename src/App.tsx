@@ -11,6 +11,7 @@ import Referees from "./pages/Referees";
 import RefereeDetail from "./pages/RefereeDetail";
 import RefereeAssignment from "./pages/RefereeAssignment";
 import RefereeDashboard from "./pages/RefereeDashboard";
+import RefereeHonor from "./pages/RefereeHonor";
 import Evaluations from "./pages/Evaluations";
 import Organization from "./pages/Organization";
 import Approvals from "./pages/Approvals";
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/referees/:id" element={<RefereeDetail />} />
           <Route path="/events/:id/assign-referees" element={<RefereeAssignment />} />
           <Route path="/referee" element={<RefereeDashboard />} />
+          <Route path="/referee/honor" element={<RefereeHonor />} />
           <Route path="/evaluations" element={<Evaluations />} />
           <Route path="/organization" element={<Organization />} />
           <Route path="/approvals" element={<Approvals />} />
