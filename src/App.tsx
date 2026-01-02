@@ -10,6 +10,7 @@ import Referees from "./pages/Referees";
 import RefereeDetail from "./pages/RefereeDetail";
 import Evaluations from "./pages/Evaluations";
 import Organization from "./pages/Organization";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/:id" element={<EventDetail />} />
