@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export default function Login() {
+export default function Signup() {
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,6 +22,10 @@ export default function Login() {
     setError(null);
 
     // Basic validation
+    if (!name.trim()) {
+      setError("Nama lengkap tidak boleh kosong");
+      return;
+    }
     if (!email.trim()) {
       setError("Email tidak boleh kosong");
       return;
@@ -27,15 +34,23 @@ export default function Login() {
       setError("Password tidak boleh kosong");
       return;
     }
+    if (password.length < 6) {
+      setError("Password minimal 6 karakter");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Konfirmasi password tidak sesuai");
+      return;
+    }
 
-    // Simulate login (UI mockup only)
+    // Simulate signup (UI mockup only)
     setIsLoading(true);
     
     // Simulate API call delay
     setTimeout(() => {
       setIsLoading(false);
-      // Navigate to dashboard on "successful" login
-      navigate("/");
+      // Navigate to login or dashboard on "successful" signup
+      navigate("/login");
     }, 1500);
   };
 
@@ -59,14 +74,14 @@ export default function Login() {
         </p>
       </div>
 
-      {/* Login Form Card */}
+      {/* Signup Form Card */}
       <div className="flex-1 px-6 -mt-8">
         <div className="bg-card rounded-2xl shadow-lg border border-border p-6 animate-fade-in">
           <h2 className="text-lg font-bold text-center mb-1">
-            Login Sistem Federasi Futsal
+            Daftar Akun Baru
           </h2>
           <p className="text-sm text-muted-foreground text-center mb-6">
-            Masuk untuk mengelola event dan wasit
+            Bergabung untuk mengelola event dan wasit
           </p>
 
           {/* Error Alert */}
@@ -78,6 +93,23 @@ export default function Login() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name Field */}
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium">
+                Nama Lengkap
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Masukkan nama lengkap"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isLoading}
+                className="h-12 text-base"
+                autoComplete="name"
+              />
+            </div>
+
             {/* Email Field */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
@@ -104,12 +136,12 @@ export default function Login() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan password"
+                  placeholder="Buat password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   className="h-12 text-base pr-12"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
@@ -126,21 +158,41 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Forgot Password Link */}
-            <div className="text-right">
-              <button
-                type="button"
-                className="text-sm text-primary hover:underline"
-                onClick={() => setError("Fitur lupa password belum tersedia")}
-              >
-                Lupa Password?
-              </button>
+            {/* Confirm Password Field */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                Konfirmasi Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Ulangi password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isLoading}
+                  className="h-12 text-base pr-12"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-12 text-base font-semibold"
+              className="w-full h-12 text-base font-semibold mt-2"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -149,16 +201,16 @@ export default function Login() {
                   Memproses...
                 </>
               ) : (
-                "Masuk"
+                "Daftar"
               )}
             </Button>
-
+            
             <div className="text-center mt-4">
               <span className="text-sm text-muted-foreground">
-                Belum punya akun?{" "}
+                Sudah punya akun?{" "}
               </span>
-              <Link to="/signup" className="text-sm font-semibold text-primary hover:underline">
-                Daftar
+              <Link to="/login" className="text-sm font-semibold text-primary hover:underline">
+                Masuk
               </Link>
             </div>
           </form>
