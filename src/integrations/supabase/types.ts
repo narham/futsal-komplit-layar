@@ -173,6 +173,7 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          provinsi_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -180,6 +181,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
+          provinsi_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -187,9 +189,69 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+          provinsi_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kabupaten_kota_provinsi_id_fkey"
+            columns: ["provinsi_id"]
+            isOneToOne: false
+            referencedRelation: "provinsi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pengurus: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          jabatan: string
+          kabupaten_kota_id: string | null
+          level: Database["public"]["Enums"]["pengurus_level"]
+          provinsi_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          jabatan: string
+          kabupaten_kota_id?: string | null
+          level: Database["public"]["Enums"]["pengurus_level"]
+          provinsi_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          jabatan?: string
+          kabupaten_kota_id?: string | null
+          level?: Database["public"]["Enums"]["pengurus_level"]
+          provinsi_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pengurus_kabupaten_kota_id_fkey"
+            columns: ["kabupaten_kota_id"]
+            isOneToOne: false
+            referencedRelation: "kabupaten_kota"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pengurus_provinsi_id_fkey"
+            columns: ["provinsi_id"]
+            isOneToOne: false
+            referencedRelation: "provinsi"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -246,6 +308,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      provinsi: {
+        Row: {
+          code: string | null
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       referee_reviews: {
         Row: {
@@ -338,6 +424,7 @@ export type Database = {
         | "panitia"
         | "wasit"
         | "evaluator"
+      pengurus_level: "PROVINSI" | "KAB_KOTA"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -472,6 +559,7 @@ export const Constants = {
         "wasit",
         "evaluator",
       ],
+      pengurus_level: ["PROVINSI", "KAB_KOTA"],
     },
   },
 } as const

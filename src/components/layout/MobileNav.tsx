@@ -1,4 +1,4 @@
-import { Home, Calendar, Users, ClipboardCheck, UserCog } from "lucide-react";
+import { Home, Calendar, Users, ClipboardCheck, UserCog, Building2 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +11,10 @@ export const MobileNav = () => {
     { icon: Calendar, label: "Event", path: "/events" },
     { icon: Users, label: "Wasit", path: "/referees" },
     { icon: ClipboardCheck, label: "Evaluasi", path: "/evaluations" },
-    ...(isAdminProvinsi() ? [{ icon: UserCog, label: "User", path: "/users" }] : []),
+    ...(isAdminProvinsi() ? [
+      { icon: Building2, label: "Organisasi", path: "/organization" },
+      { icon: UserCog, label: "User", path: "/users" },
+    ] : []),
   ];
 
   return (
