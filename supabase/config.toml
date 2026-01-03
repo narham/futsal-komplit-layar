@@ -1,4 +1,4 @@
-project_id = "ulojaflewchqlobrqiyt"
+project_id = "thpdwcvkdvpoeccgurnz"
 
 [functions.seed-database]
 verify_jwt = false
