@@ -493,9 +493,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_schedule_conflict: {
+        Args: { _event_id: string; _referee_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_admin_provinsi: { Args: { _user_id: string }; Returns: boolean }
       is_event_approved: { Args: { _event_id: string }; Returns: boolean }
+      is_referee_active: { Args: { _referee_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:

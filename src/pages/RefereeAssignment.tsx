@@ -3,9 +3,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowLeft,
   Calendar,
@@ -14,9 +22,10 @@ import {
   Search,
   UserPlus,
   UserMinus,
-  Star,
-  Check,
   Users,
+  AlertTriangle,
+  Crown,
+  User,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -28,128 +37,109 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
-
-// Mock event data
-const eventData = {
-  id: 1,
-  name: "Piala Walikota Futsal 2025",
-  date: "15-20 Januari 2025",
-  location: "GOR Sudiang, Makassar",
-  organizer: "Pengcab Futsal Makassar",
-  status: "approved",
-  requiredReferees: 4,
-};
-
-// Mock referee data
-const allReferees = [
-  {
-    id: 1,
-    name: "Ahmad Rizky",
-    license: "Lisensi A",
-    rating: 4.8,
-    totalMatches: 124,
-    kabKota: "Makassar",
-    available: true,
-  },
-  {
-    id: 2,
-    name: "Budi Santoso",
-    license: "Lisensi A",
-    rating: 4.6,
-    totalMatches: 98,
-    kabKota: "Gowa",
-    available: true,
-  },
-  {
-    id: 3,
-    name: "Cahya Putra",
-    license: "Lisensi B",
-    rating: 4.5,
-    totalMatches: 76,
-    kabKota: "Maros",
-    available: true,
-  },
-  {
-    id: 4,
-    name: "Dedi Wijaya",
-    license: "Lisensi B",
-    rating: 4.3,
-    totalMatches: 52,
-    kabKota: "Makassar",
-    available: false,
-  },
-  {
-    id: 5,
-    name: "Eko Prasetyo",
-    license: "Lisensi C",
-    rating: 4.1,
-    totalMatches: 28,
-    kabKota: "Takalar",
-    available: true,
-  },
-  {
-    id: 6,
-    name: "Fajar Ramadhan",
-    license: "Lisensi C",
-    rating: 4.0,
-    totalMatches: 15,
-    kabKota: "Gowa",
-    available: true,
-  },
-];
+import { useEvent } from "@/hooks/useEvents";
+import {
+  useEventAssignments,
+  useAvailableReferees,
+  useAssignReferee,
+  useUpdateAssignment,
+  useRemoveAssignment,
+  type RefereeRole,
+  type AvailableReferee,
+  type EventAssignment,
+  getRoleBadgeVariant,
+} from "@/hooks/useEventAssignments";
+import { getLicenseBadgeColor } from "@/hooks/useReferees";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 
 export default function RefereeAssignment() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { id: eventId } = useParams<{ id: string }>();
   const [searchQuery, setSearchQuery] = useState("");
-  const [assignedReferees, setAssignedReferees] = useState<number[]>([]);
+  const [selectedRole, setSelectedRole] = useState<RefereeRole>("CADANGAN");
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     action: "assign" | "remove";
-    referee: (typeof allReferees)[0] | null;
-  }>({ open: false, action: "assign", referee: null });
+    referee?: AvailableReferee;
+    assignment?: EventAssignment;
+  }>({ open: false, action: "assign" });
 
-  const availableReferees = allReferees.filter(
-    (ref) => !assignedReferees.includes(ref.id) && ref.available
+  const { data: event, isLoading: eventLoading } = useEvent(eventId || "");
+  const { data: assignments, isLoading: assignmentsLoading } = useEventAssignments(eventId || "");
+  const { data: availableReferees, isLoading: refereesLoading, error: refereesError } = useAvailableReferees(eventId || "");
+
+  const assignMutation = useAssignReferee();
+  const updateMutation = useUpdateAssignment();
+  const removeMutation = useRemoveAssignment();
+
+  const filteredReferees = (availableReferees || []).filter((ref) =>
+    ref.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const assignedRefereesList = allReferees.filter((ref) =>
-    assignedReferees.includes(ref.id)
-  );
+  const refereesWithoutConflict = filteredReferees.filter(r => !r.has_conflict);
+  const refereesWithConflict = filteredReferees.filter(r => r.has_conflict);
 
-  const filteredReferees = availableReferees.filter((ref) =>
-    ref.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleAssign = (referee: (typeof allReferees)[0]) => {
+  const handleAssign = (referee: AvailableReferee) => {
     setConfirmDialog({ open: true, action: "assign", referee });
   };
 
-  const handleRemove = (referee: (typeof allReferees)[0]) => {
-    setConfirmDialog({ open: true, action: "remove", referee });
+  const handleRemove = (assignment: EventAssignment) => {
+    setConfirmDialog({ open: true, action: "remove", assignment });
   };
 
-  const confirmAction = () => {
-    if (!confirmDialog.referee) return;
+  const handleRoleChange = (assignmentId: string, newRole: RefereeRole) => {
+    updateMutation.mutate({ assignmentId, role: newRole });
+  };
 
-    if (confirmDialog.action === "assign") {
-      setAssignedReferees((prev) => [...prev, confirmDialog.referee!.id]);
-      toast({
-        title: "Wasit Ditugaskan",
-        description: `${confirmDialog.referee.name} berhasil ditugaskan ke event ini.`,
+  const confirmAction = async () => {
+    if (confirmDialog.action === "assign" && confirmDialog.referee) {
+      await assignMutation.mutateAsync({
+        eventId: eventId!,
+        refereeId: confirmDialog.referee.id,
+        role: selectedRole,
       });
-    } else {
-      setAssignedReferees((prev) =>
-        prev.filter((id) => id !== confirmDialog.referee!.id)
-      );
-      toast({
-        title: "Penugasan Dibatalkan",
-        description: `${confirmDialog.referee.name} telah dihapus dari event ini.`,
-      });
+    } else if (confirmDialog.action === "remove" && confirmDialog.assignment) {
+      await removeMutation.mutateAsync({ assignmentId: confirmDialog.assignment.id });
     }
-    setConfirmDialog({ open: false, action: "assign", referee: null });
+    setConfirmDialog({ open: false, action: "assign" });
   };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  if (eventLoading) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <Skeleton className="h-12 w-64 mb-4" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-96 lg:col-span-2" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Event tidak ditemukan</h2>
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            Kembali
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const isApproved = event.status === "DISETUJUI";
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,13 +152,24 @@ export default function RefereeAssignment() {
           <div>
             <h1 className="text-lg font-bold">Penugasan Wasit</h1>
             <p className="text-xs text-muted-foreground">
-              Tugaskan wasit untuk event yang disetujui
+              {isApproved ? "Tugaskan wasit untuk event" : "Event belum disetujui"}
             </p>
           </div>
         </div>
       </header>
 
       <main className="p-4 pb-8 max-w-7xl mx-auto">
+        {!isApproved && (
+          <Card className="mb-6 border-warning bg-warning/5">
+            <CardContent className="flex items-center gap-3 py-4">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              <p className="text-sm">
+                Event harus disetujui terlebih dahulu sebelum dapat menugaskan wasit.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Event Info & Assigned Referees */}
           <div className="lg:col-span-1 space-y-4">
@@ -184,39 +185,37 @@ export default function RefereeAssignment() {
                       <CardTitle className="text-base">Informasi Event</CardTitle>
                     </div>
                   </div>
-                  <StatusBadge status="success">Disetujui</StatusBadge>
+                  <StatusBadge status={isApproved ? "success" : "warning"}>
+                    {event.status}
+                  </StatusBadge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <h3 className="font-semibold text-lg">{eventData.name}</h3>
+                  <h3 className="font-semibold text-lg">{event.name}</h3>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>{eventData.date}</span>
+                  <span>
+                    {format(new Date(event.date), "EEEE, dd MMMM yyyy", { locale: localeId })}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{eventData.location}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>{eventData.organizer}</span>
-                </div>
+                {event.location && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>{event.location}</span>
+                  </div>
+                )}
+                {event.kabupaten_kota && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{event.kabupaten_kota.name}</span>
+                  </div>
+                )}
                 <div className="pt-2 border-t">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Kebutuhan Wasit
-                    </span>
-                    <Badge
-                      variant={
-                        assignedReferees.length >= eventData.requiredReferees
-                          ? "default"
-                          : "secondary"
-                      }
-                    >
-                      {assignedReferees.length} / {eventData.requiredReferees}
-                    </Badge>
+                    <span className="text-sm text-muted-foreground">Wasit Ditugaskan</span>
+                    <Badge variant="secondary">{assignments?.length || 0}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -226,49 +225,93 @@ export default function RefereeAssignment() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Check className="h-4 w-4 text-success" />
+                  <Users className="h-4 w-4 text-primary" />
                   Wasit Ditugaskan
                 </CardTitle>
                 <CardDescription>
-                  {assignedRefereesList.length === 0
+                  {assignmentsLoading
+                    ? "Memuat..."
+                    : assignments?.length === 0
                     ? "Belum ada wasit yang ditugaskan"
-                    : `${assignedRefereesList.length} wasit telah ditugaskan`}
+                    : `${assignments?.length} wasit telah ditugaskan`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {assignedRefereesList.length === 0 ? (
+                {assignmentsLoading ? (
+                  <div className="space-y-2">
+                    {[1, 2].map((i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : assignments?.length === 0 ? (
                   <div className="text-center py-6 text-muted-foreground">
                     <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
                     <p className="text-sm">Pilih wasit dari daftar</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {assignedRefereesList.map((referee) => (
+                    {assignments?.map((assignment) => (
                       <div
-                        key={referee.id}
-                        className="flex items-center justify-between p-3 bg-success/5 border border-success/20 rounded-lg"
+                        key={assignment.id}
+                        className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-success/10 text-success font-semibold">
-                              {referee.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
+                            <AvatarImage src={assignment.referee?.profile_photo_url || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                              {getInitials(assignment.referee?.full_name || "?")}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium text-sm">{referee.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {referee.license}
-                            </p>
+                            <p className="font-medium text-sm">{assignment.referee?.full_name}</p>
+                            <div className="flex items-center gap-2">
+                              {assignment.referee?.license_level && (
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs ${getLicenseBadgeColor(assignment.referee.license_level)}`}
+                                >
+                                  {assignment.referee.license_level}
+                                </Badge>
+                              )}
+                              <Select
+                                value={assignment.role}
+                                onValueChange={(value: RefereeRole) =>
+                                  handleRoleChange(assignment.id, value)
+                                }
+                              >
+                                <SelectTrigger className="h-6 w-auto text-xs px-2 border-none bg-transparent">
+                                  <div className="flex items-center gap-1">
+                                    {assignment.role === "UTAMA" ? (
+                                      <Crown className="h-3 w-3" />
+                                    ) : (
+                                      <User className="h-3 w-3" />
+                                    )}
+                                    <SelectValue />
+                                  </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="UTAMA">
+                                    <div className="flex items-center gap-2">
+                                      <Crown className="h-3 w-3" />
+                                      Utama
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="CADANGAN">
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-3 w-3" />
+                                      Cadangan
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleRemove(referee)}
+                          onClick={() => handleRemove(assignment)}
                         >
                           <UserMinus className="h-4 w-4" />
                         </Button>
@@ -278,23 +321,6 @@ export default function RefereeAssignment() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Save Button - Mobile */}
-            <div className="lg:hidden">
-              <Button
-                className="w-full h-12"
-                disabled={assignedReferees.length === 0}
-                onClick={() => {
-                  toast({
-                    title: "Penugasan Disimpan",
-                    description: `${assignedReferees.length} wasit telah ditugaskan untuk event ini.`,
-                  });
-                  navigate(-1);
-                }}
-              >
-                Simpan Penugasan ({assignedReferees.length})
-              </Button>
-            </div>
           </div>
 
           {/* Right Column - Available Referees */}
@@ -305,161 +331,179 @@ export default function RefereeAssignment() {
                   <div>
                     <CardTitle className="text-base">Wasit Tersedia</CardTitle>
                     <CardDescription>
-                      Pilih wasit untuk ditugaskan ke event ini
+                      {isApproved
+                        ? "Pilih wasit untuk ditugaskan ke event ini"
+                        : "Setujui event terlebih dahulu"}
                     </CardDescription>
                   </div>
-                  <div className="relative w-full sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Cari wasit..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-full sm:w-48">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Cari wasit..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                        disabled={!isApproved}
+                      />
+                    </div>
+                    <Select
+                      value={selectedRole}
+                      onValueChange={(value: RefereeRole) => setSelectedRole(value)}
+                      disabled={!isApproved}
+                    >
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Peran" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UTAMA">
+                          <div className="flex items-center gap-2">
+                            <Crown className="h-3 w-3" />
+                            Utama
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="CADANGAN">
+                          <div className="flex items-center gap-2">
+                            <User className="h-3 w-3" />
+                            Cadangan
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {filteredReferees.map((referee) => (
-                    <Card
-                      key={referee.id}
-                      className="border-border hover:border-primary/30 transition-colors"
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-12 w-12">
-                              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                                {referee.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-semibold">{referee.name}</p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <Badge variant="outline" className="text-xs">
-                                  {referee.license}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {referee.kabKota}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                          <div className="flex items-center gap-4">
-                            <span className="flex items-center gap-1 text-sm">
-                              <Star className="h-3.5 w-3.5 text-warning fill-warning" />
-                              {referee.rating}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {referee.totalMatches} pertandingan
-                            </span>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => handleAssign(referee)}
-                            disabled={
-                              assignedReferees.length >= eventData.requiredReferees
-                            }
-                          >
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            Tugaskan
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                {filteredReferees.length === 0 && (
+                {!isApproved ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p>Tidak ada wasit tersedia</p>
-                    {searchQuery && (
-                      <Button
-                        variant="link"
-                        onClick={() => setSearchQuery("")}
-                        className="mt-1"
-                      >
-                        Reset pencarian
-                      </Button>
-                    )}
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>Event harus disetujui untuk menugaskan wasit</p>
                   </div>
-                )}
-
-                {/* Unavailable Referees Section */}
-                {allReferees.some((ref) => !ref.available) && (
-                  <div className="mt-6 pt-6 border-t">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                      Wasit Tidak Tersedia
-                    </h4>
+                ) : refereesLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[1, 2, 3, 4].map((i) => (
+                      <Skeleton key={i} className="h-32" />
+                    ))}
+                  </div>
+                ) : refereesError ? (
+                  <div className="text-center py-12 text-destructive">
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>{refereesError.message}</p>
+                  </div>
+                ) : (
+                  <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {allReferees
-                        .filter((ref) => !ref.available)
-                        .map((referee) => (
-                          <Card
-                            key={referee.id}
-                            className="border-border bg-muted/30 opacity-60"
-                          >
-                            <CardContent className="p-4">
+                      {refereesWithoutConflict.map((referee) => (
+                        <Card
+                          key={referee.id}
+                          className="border-border hover:border-primary/30 transition-colors"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
                               <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
-                                    {referee.name
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")}
+                                <Avatar className="h-12 w-12">
+                                  <AvatarImage src={referee.profile_photo_url || undefined} />
+                                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                    {getInitials(referee.full_name)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div className="flex-1">
-                                  <p className="font-medium text-sm">
-                                    {referee.name}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {referee.license} • Sedang bertugas
-                                  </p>
+                                <div>
+                                  <p className="font-semibold">{referee.full_name}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    {referee.license_level && (
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-xs ${getLicenseBadgeColor(referee.license_level)}`}
+                                      >
+                                        {referee.license_level}
+                                      </Badge>
+                                    )}
+                                    {referee.kabupaten_kota_name && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {referee.kabupaten_kota_name}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
-                        ))}
+                            </div>
+                            <div className="flex items-center justify-end mt-3 pt-3 border-t">
+                              <Button
+                                size="sm"
+                                onClick={() => handleAssign(referee)}
+                                disabled={assignMutation.isPending}
+                              >
+                                <UserPlus className="h-4 w-4 mr-1" />
+                                Tugaskan
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  </div>
+
+                    {refereesWithoutConflict.length === 0 && refereesWithConflict.length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        <p>Tidak ada wasit tersedia</p>
+                        {searchQuery && (
+                          <Button
+                            variant="link"
+                            onClick={() => setSearchQuery("")}
+                            className="mt-1"
+                          >
+                            Reset pencarian
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Referees with conflicts */}
+                    {refereesWithConflict.length > 0 && (
+                      <div className="mt-6 pt-6 border-t">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-warning" />
+                          Wasit dengan Jadwal Bentrok ({refereesWithConflict.length})
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {refereesWithConflict.map((referee) => (
+                            <Card
+                              key={referee.id}
+                              className="border-border bg-muted/30 opacity-60"
+                            >
+                              <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarImage src={referee.profile_photo_url || undefined} />
+                                    <AvatarFallback className="bg-muted text-muted-foreground font-semibold">
+                                      {getInitials(referee.full_name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                    <p className="font-medium text-sm">{referee.full_name}</p>
+                                    <p className="text-xs text-warning">
+                                      Sudah bertugas di tanggal yang sama
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
           </div>
-        </div>
-
-        {/* Save Button - Desktop */}
-        <div className="hidden lg:flex justify-end mt-6">
-          <Button
-            size="lg"
-            disabled={assignedReferees.length === 0}
-            onClick={() => {
-              toast({
-                title: "Penugasan Disimpan",
-                description: `${assignedReferees.length} wasit telah ditugaskan untuk event ini.`,
-              });
-              navigate(-1);
-            }}
-          >
-            Simpan Penugasan ({assignedReferees.length} wasit)
-          </Button>
         </div>
       </main>
 
       {/* Confirmation Dialog */}
       <AlertDialog
         open={confirmDialog.open}
-        onOpenChange={(open) =>
-          setConfirmDialog((prev) => ({ ...prev, open }))
-        }
+        onOpenChange={(open) => setConfirmDialog((prev) => ({ ...prev, open }))}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -469,9 +513,23 @@ export default function RefereeAssignment() {
                 : "Batalkan Penugasan?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmDialog.action === "assign"
-                ? `${confirmDialog.referee?.name} akan ditugaskan ke ${eventData.name}.`
-                : `${confirmDialog.referee?.name} akan dihapus dari penugasan ${eventData.name}.`}
+              {confirmDialog.action === "assign" ? (
+                <>
+                  Anda akan menugaskan{" "}
+                  <span className="font-semibold">{confirmDialog.referee?.full_name}</span>{" "}
+                  sebagai wasit{" "}
+                  <span className="font-semibold">{selectedRole.toLowerCase()}</span> untuk
+                  event ini.
+                </>
+              ) : (
+                <>
+                  Anda akan membatalkan penugasan{" "}
+                  <span className="font-semibold">
+                    {confirmDialog.assignment?.referee?.full_name}
+                  </span>{" "}
+                  dari event ini.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -484,7 +542,7 @@ export default function RefereeAssignment() {
                   : ""
               }
             >
-              {confirmDialog.action === "assign" ? "Tugaskan" : "Hapus"}
+              {confirmDialog.action === "assign" ? "Tugaskan" : "Batalkan Penugasan"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
