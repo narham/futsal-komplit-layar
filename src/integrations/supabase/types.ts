@@ -485,6 +485,22 @@ export type Database = {
       }
     }
     Functions: {
+      get_admin_dashboard_summary: {
+        Args: {
+          _end_date?: string
+          _kabupaten_kota_id?: string
+          _start_date?: string
+        }
+        Returns: {
+          active_referees: number
+          avg_income_per_referee: number
+          completed_events: number
+          total_events: number
+          total_pending_income: number
+          total_referees: number
+          total_verified_income: number
+        }[]
+      }
       get_honor_statistics: {
         Args: { _referee_id?: string }
         Returns: {
@@ -506,6 +522,41 @@ export type Database = {
           kabupaten_kota_name: string
           registration_status: string
           requested_role: string
+        }[]
+      }
+      get_referee_event_count: {
+        Args: {
+          _end_date?: string
+          _kabupaten_kota_id?: string
+          _start_date?: string
+        }
+        Returns: {
+          cancelled_events: number
+          completed_events: number
+          kabupaten_kota_id: string
+          kabupaten_kota_name: string
+          pending_events: number
+          referee_id: string
+          referee_name: string
+          total_events: number
+        }[]
+      }
+      get_referee_income_summary: {
+        Args: {
+          _end_date?: string
+          _kabupaten_kota_id?: string
+          _start_date?: string
+        }
+        Returns: {
+          kabupaten_kota_id: string
+          kabupaten_kota_name: string
+          pending_count: number
+          referee_id: string
+          referee_name: string
+          rejected_count: number
+          total_pending_income: number
+          total_verified_income: number
+          verified_count: number
         }[]
       }
       get_referees: {
