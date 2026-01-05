@@ -23,6 +23,7 @@ import UserApprovals from "./pages/UserApprovals";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import EventEdit from "./pages/EventEdit";
 import EventSubmission from "./pages/EventSubmission";
 import EventCalendar from "./pages/EventCalendar";
 import Referees from "./pages/Referees";
@@ -130,6 +131,14 @@ const App = () => (
               } 
             />
             <Route 
+              path="/events/:id/edit" 
+              element={
+                <ProtectedRoute requireRole={["admin_provinsi", "admin_kab_kota", "panitia"]} requireProfileComplete>
+                  <EventEdit />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/events/calendar" 
               element={
                 <ProtectedRoute requireRole={["admin_provinsi", "admin_kab_kota", "panitia"]} requireProfileComplete>
@@ -138,7 +147,7 @@ const App = () => (
               } 
             />
             <Route 
-              path="/referees" 
+              path="/referees"
               element={
                 <ProtectedRoute requireAdmin requireProfileComplete>
                   <Referees />

@@ -65,6 +65,10 @@ export default function EventDetail() {
   const canApprove = isAdminProvinsi() && event.status === "DIAJUKAN";
   const canComplete = isAdminProvinsi() && event.status === "DISETUJUI";
   const canAssignReferees = event.status === "DISETUJUI";
+  
+  // Edit permission: Admin can always edit, creator can only edit if status is DIAJUKAN
+  const canEdit = isAdminProvinsi() || 
+    (event.created_by === user?.id && event.status === "DIAJUKAN");
 
   const handleApprove = async () => {
     if (!user) return;
@@ -157,9 +161,15 @@ export default function EventDetail() {
               </StatusBadge>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon">
-                <Edit className="h-4 w-4" />
-              </Button>
+              {canEdit && (
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => navigate(`/events/${event.id}/edit`)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              )}
               {isAdminProvinsi() && (
                 <Button
                   variant="outline"
