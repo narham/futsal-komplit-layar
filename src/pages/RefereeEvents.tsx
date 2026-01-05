@@ -51,6 +51,8 @@ const getStatusLabel = (status: string) => {
       return "Dikonfirmasi";
     case "declined":
       return "Ditolak";
+    case "cancelled":
+      return "Dibatalkan Admin";
     default:
       return status;
   }
@@ -173,12 +175,27 @@ export default function RefereeEvents() {
                 {getStatusLabel(assignment.status)}
               </StatusBadge>
             )}
+            {assignment.status === "cancelled" && (
+              <StatusBadge status="error">
+                <XCircle className="h-3 w-3 mr-1" />
+                {getStatusLabel(assignment.status)}
+              </StatusBadge>
+            )}
             {honorStatus && (
               <StatusBadge status={honorStatus.variant}>
                 {honorStatus.label}
               </StatusBadge>
             )}
           </div>
+
+          {/* Cancellation reason */}
+          {assignment.status === "cancelled" && assignment.cancellation_reason && (
+            <div className="mt-3 p-2 bg-destructive/10 rounded-md">
+              <p className="text-xs text-destructive">
+                <strong>Alasan pembatalan:</strong> {assignment.cancellation_reason}
+              </p>
+            </div>
+          )}
 
           {/* Actions */}
           {showActions && assignment.status === "pending" && (

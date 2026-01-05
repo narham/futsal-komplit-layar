@@ -14,6 +14,8 @@ export interface EventAssignment {
   status: AssignmentStatus;
   created_at: string;
   updated_at: string;
+  cancellation_reason?: string | null;
+  cancelled_by?: string | null;
   // Joined data
   referee?: {
     id: string;
@@ -30,6 +32,10 @@ export interface EventAssignment {
     name: string;
     date: string;
     status: string;
+  } | null;
+  cancelled_by_profile?: {
+    id: string;
+    full_name: string;
   } | null;
 }
 
@@ -53,16 +59,19 @@ export function useEventAssignments(eventId: string) {
         .from("event_assignments")
         .select(`
           *,
-          referee:referee_id (
+          referee:profiles!event_assignments_referee_id_fkey (
             id,
             full_name,
             license_level,
             profile_photo_url,
             kabupaten_kota:kabupaten_kota_id (id, name)
+          ),
+          cancelled_by_profile:profiles!event_assignments_cancelled_by_fkey (
+            id,
+            full_name
           )
         `)
         .eq("event_id", eventId)
-        .neq("status", "cancelled")
         .order("role", { ascending: true });
 
       if (error) throw error;
@@ -354,6 +363,61 @@ export function useConfirmAssignment() {
     },
     onError: (error) => {
       toast.error(error.message || "Gagal mengubah status penugasan");
+    },
+  });
+}
+
+// Cancel confirmed assignment (Admin Provinsi only)
+export function useCancelConfirmedAssignment() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      assignmentId,
+      reason,
+    }: {
+      assignmentId: string;
+      reason: string;
+    }) => {
+      if (!user) throw new Error("User tidak terautentikasi");
+      if (!reason.trim()) throw new Error("Alasan pembatalan wajib diisi");
+
+      // Update assignment status to cancelled with reason
+      const { data, error } = await supabase
+        .from("event_assignments")
+        .update({
+          status: "cancelled",
+          cancellation_reason: reason.trim(),
+          cancelled_by: user.id,
+        })
+        .eq("id", assignmentId)
+        .select(`*, event_id, referee_id`)
+        .single();
+
+      if (error) throw error;
+
+      // Log to audit
+      await supabase.from("audit_logs").insert({
+        action: "CANCEL_ASSIGNMENT",
+        entity_type: "event_assignments",
+        entity_id: assignmentId,
+        actor_id: user.id,
+        metadata: { reason },
+        new_data: { status: "cancelled", cancellation_reason: reason },
+      });
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["event-assignments", data.event_id] });
+      queryClient.invalidateQueries({ queryKey: ["available-referees", data.event_id] });
+      queryClient.invalidateQueries({ queryKey: ["referee-assignments", data.referee_id] });
+      queryClient.invalidateQueries({ queryKey: ["referee-events"] });
+      toast.success("Penugasan berhasil dibatalkan");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Gagal membatalkan penugasan");
     },
   });
 }

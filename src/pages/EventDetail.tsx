@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Calendar, MapPin, Edit, UserPlus, CheckCircle, XCircle, Clock, Loader2, History, User } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Edit, UserPlus, CheckCircle, XCircle, Clock, Loader2, History, User, Ban } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useEvent, useEventApprovals, useApproveEvent, useRejectEvent, useCompleteEvent, getEventStatusDisplay, EventStatus } from "@/hooks/useEvents";
-import { useEventAssignments, getRoleBadgeVariant, getStatusBadgeVariant, RefereeRole, AssignmentStatus } from "@/hooks/useEventAssignments";
+import { useEventAssignments, getRoleBadgeVariant, getStatusBadgeVariant, RefereeRole, AssignmentStatus, useCancelConfirmedAssignment, EventAssignment } from "@/hooks/useEventAssignments";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -26,11 +26,15 @@ export default function EventDetail() {
   const approveEvent = useApproveEvent();
   const rejectEvent = useRejectEvent();
   const completeEvent = useCompleteEvent();
+  const cancelAssignment = useCancelConfirmedAssignment();
 
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showCancelAssignmentDialog, setShowCancelAssignmentDialog] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<EventAssignment | null>(null);
   const [notes, setNotes] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
 
   if (isLoading) {
     return (
@@ -95,9 +99,31 @@ export default function EventDetail() {
       case "confirmed": return "Dikonfirmasi";
       case "completed": return "Selesai";
       case "cancelled": return "Dibatalkan";
+      case "declined": return "Ditolak";
       default: return status;
     }
   };
+
+  const handleCancelAssignment = async () => {
+    if (!selectedAssignment || !cancelReason.trim()) return;
+    await cancelAssignment.mutateAsync({
+      assignmentId: selectedAssignment.id,
+      reason: cancelReason,
+    });
+    setShowCancelAssignmentDialog(false);
+    setSelectedAssignment(null);
+    setCancelReason("");
+  };
+
+  const openCancelDialog = (assignment: EventAssignment) => {
+    setSelectedAssignment(assignment);
+    setCancelReason("");
+    setShowCancelAssignmentDialog(true);
+  };
+
+  // Filter active assignments (not cancelled/declined)
+  const activeAssignments = assignments?.filter(a => a.status !== "cancelled" && a.status !== "declined") || [];
+  const cancelledAssignments = assignments?.filter(a => a.status === "cancelled" || a.status === "declined") || [];
 
   return (
     <AppLayout title="Detail Event">
@@ -216,9 +242,9 @@ export default function EventDetail() {
             <TabsTrigger value="history">Riwayat</TabsTrigger>
             <TabsTrigger value="referees">
               Wasit
-              {assignments && assignments.length > 0 && (
+              {activeAssignments.length > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
-                  {assignments.length}
+                  {activeAssignments.length}
                 </span>
               )}
             </TabsTrigger>
@@ -287,29 +313,76 @@ export default function EventDetail() {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ) : assignments && assignments.length > 0 ? (
-              assignments.map((assignment) => (
-                <Card key={assignment.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{assignment.referee?.full_name || "Unknown"}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <StatusBadge status={getRoleBadgeVariant(assignment.role as RefereeRole)}>
-                            {getRoleLabel(assignment.role || "CADANGAN")}
-                          </StatusBadge>
-                          <StatusBadge status={getStatusBadgeVariant(assignment.status as AssignmentStatus)}>
-                            {getStatusLabel(assignment.status || "pending")}
-                          </StatusBadge>
+            ) : activeAssignments.length > 0 ? (
+              <>
+                {activeAssignments.map((assignment) => (
+                  <Card key={assignment.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                          <User className="h-5 w-5 text-muted-foreground" />
                         </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{assignment.referee?.full_name || "Unknown"}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <StatusBadge status={getRoleBadgeVariant(assignment.role as RefereeRole)}>
+                              {getRoleLabel(assignment.role || "CADANGAN")}
+                            </StatusBadge>
+                            <StatusBadge status={getStatusBadgeVariant(assignment.status as AssignmentStatus)}>
+                              {getStatusLabel(assignment.status || "pending")}
+                            </StatusBadge>
+                          </div>
+                        </div>
+                        {/* Cancel button for Admin Provinsi */}
+                        {isAdminProvinsi() && (assignment.status === "pending" || assignment.status === "confirmed") && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => openCancelDialog(assignment)}
+                          >
+                            <Ban className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Cancelled assignments section */}
+                {cancelledAssignments.length > 0 && (
+                  <div className="mt-6">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Dibatalkan</p>
+                    {cancelledAssignments.map((assignment) => (
+                      <Card key={assignment.id} className="opacity-60">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                              <User className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium">{assignment.referee?.full_name || "Unknown"}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <StatusBadge status={getRoleBadgeVariant(assignment.role as RefereeRole)}>
+                                  {getRoleLabel(assignment.role || "CADANGAN")}
+                                </StatusBadge>
+                                <StatusBadge status="error">
+                                  {getStatusLabel(assignment.status || "cancelled")}
+                                </StatusBadge>
+                              </div>
+                              {assignment.cancellation_reason && (
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  Alasan: {assignment.cancellation_reason}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
               <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
@@ -400,6 +473,39 @@ export default function EventDetail() {
             <Button variant="outline" onClick={() => setShowCompleteDialog(false)}>Batal</Button>
             <Button onClick={handleComplete} disabled={completeEvent.isPending}>
               {completeEvent.isPending ? "Menyimpan..." : "Tandai Selesai"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Assignment Dialog */}
+      <Dialog open={showCancelAssignmentDialog} onOpenChange={setShowCancelAssignmentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Batalkan Penugasan</DialogTitle>
+            <DialogDescription>
+              Anda akan membatalkan penugasan wasit {selectedAssignment?.referee?.full_name} untuk event ini.
+              Wasit akan melihat pembatalan ini beserta alasan yang Anda berikan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Alasan Pembatalan *</Label>
+              <Textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Jelaskan alasan pembatalan penugasan..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelAssignmentDialog(false)}>Batal</Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleCancelAssignment} 
+              disabled={cancelAssignment.isPending || !cancelReason.trim()}
+            >
+              {cancelAssignment.isPending ? "Membatalkan..." : "Konfirmasi Pembatalan"}
             </Button>
           </DialogFooter>
         </DialogContent>

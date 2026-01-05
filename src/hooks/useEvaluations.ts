@@ -237,7 +237,7 @@ export function useEvaluatableEvents() {
             id,
             referee_id,
             status,
-            referee:profiles(id, full_name, profile_photo_url)
+            referee:profiles!event_assignments_referee_id_fkey(id, full_name, profile_photo_url)
           )
         `)
         .eq("status", "SELESAI")
