@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Calendar, MapPin, Edit, UserPlus, CheckCircle, XCircle, Clock, Loader2, History, User, Ban } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Edit, UserPlus, CheckCircle, XCircle, Clock, Loader2, History, User, Ban, Trash2 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useEvent, useEventApprovals, useApproveEvent, useRejectEvent, useCompleteEvent, getEventStatusDisplay, EventStatus } from "@/hooks/useEvents";
+import { useEvent, useEventApprovals, useApproveEvent, useRejectEvent, useCompleteEvent, useDeleteEvent, getEventStatusDisplay, EventStatus } from "@/hooks/useEvents";
 import { useEventAssignments, getRoleBadgeVariant, getStatusBadgeVariant, RefereeRole, AssignmentStatus, useCancelConfirmedAssignment, EventAssignment } from "@/hooks/useEventAssignments";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -26,11 +26,13 @@ export default function EventDetail() {
   const approveEvent = useApproveEvent();
   const rejectEvent = useRejectEvent();
   const completeEvent = useCompleteEvent();
+  const deleteEvent = useDeleteEvent();
   const cancelAssignment = useCancelConfirmedAssignment();
 
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelAssignmentDialog, setShowCancelAssignmentDialog] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<EventAssignment | null>(null);
   const [notes, setNotes] = useState("");
@@ -83,6 +85,13 @@ export default function EventDetail() {
     await completeEvent.mutateAsync({ eventId: event.id, notes, userId: user.id });
     setShowCompleteDialog(false);
     setNotes("");
+  };
+
+  const handleDelete = async () => {
+    if (!user) return;
+    await deleteEvent.mutateAsync({ eventId: event.id, userId: user.id });
+    setShowDeleteDialog(false);
+    navigate("/events");
   };
 
   const getRoleLabel = (role: string) => {
@@ -147,9 +156,21 @@ export default function EventDetail() {
                 {statusDisplay.label}
               </StatusBadge>
             </div>
-            <Button variant="outline" size="icon">
-              <Edit className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon">
+                <Edit className="h-4 w-4" />
+              </Button>
+              {isAdminProvinsi() && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
           {event.description && (
@@ -506,6 +527,31 @@ export default function EventDetail() {
               disabled={cancelAssignment.isPending || !cancelReason.trim()}
             >
               {cancelAssignment.isPending ? "Membatalkan..." : "Konfirmasi Pembatalan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Event Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Event</DialogTitle>
+            <DialogDescription>
+              Anda yakin ingin menghapus event "{event?.name}"?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 bg-muted rounded-lg text-sm text-muted-foreground">
+            <p>⚠️ Event yang dihapus tidak akan tampil di daftar, namun datanya tetap tersimpan untuk keperluan audit.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Batal</Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              disabled={deleteEvent.isPending}
+            >
+              {deleteEvent.isPending ? "Menghapus..." : "Hapus Event"}
             </Button>
           </DialogFooter>
         </DialogContent>
