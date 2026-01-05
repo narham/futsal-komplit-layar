@@ -11,7 +11,8 @@ import {
   CalendarPlus,
   FileCheck,
   AlertCircle,
-  Loader2
+  Loader2,
+  Database
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -83,6 +84,17 @@ export default function Dashboard() {
       color: "bg-primary/10 text-primary"
     },
   ];
+
+  // Additional actions for admin_provinsi only
+  const adminProvinsiActions = isAdminProvinsi() ? [
+    { 
+      title: "Export Database", 
+      description: "Backup data sistem", 
+      icon: Database, 
+      path: "/export",
+      color: "bg-accent/10 text-accent"
+    },
+  ] : [];
 
   const getActivityIcon = (action: string) => {
     if (action.includes("APPROVE") || action.includes("VERIFIED")) return CheckCircle;
@@ -165,7 +177,7 @@ export default function Dashboard() {
             Akses Cepat
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {quickActions.map((action) => (
+            {[...quickActions, ...adminProvinsiActions].map((action) => (
               <Link key={action.title} to={action.path}>
                 <Card className="hover:shadow-md transition-all hover:border-primary/30 h-full">
                   <CardContent className="p-4">
