@@ -10,6 +10,8 @@ export interface RefereeEventAssignment {
   status: "pending" | "confirmed" | "cancelled" | "declined";
   created_at: string;
   updated_at: string;
+  cancellation_reason?: string | null;
+  cancelled_by?: string | null;
   event: {
     id: string;
     name: string;
@@ -50,6 +52,8 @@ export function useRefereeEvents() {
           status,
           created_at,
           updated_at,
+          cancellation_reason,
+          cancelled_by,
           event:event_id (
             id,
             name,
@@ -61,7 +65,6 @@ export function useRefereeEvents() {
           )
         `)
         .eq("referee_id", user.id)
-        .neq("status", "cancelled")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -91,7 +94,7 @@ export function useRefereeEvents() {
   });
 }
 
-// Get upcoming events (date >= today and event status is DISETUJUI)
+// Get upcoming events (date >= today and event status is DISETUJUI, excluding cancelled)
 export function useUpcomingRefereeEvents() {
   const { data: allEvents, ...rest } = useRefereeEvents();
   
@@ -100,7 +103,8 @@ export function useUpcomingRefereeEvents() {
   const upcomingEvents = allEvents?.filter(assignment => 
     assignment.event?.date && 
     assignment.event.date >= today &&
-    assignment.event.status === "DISETUJUI"
+    assignment.event.status === "DISETUJUI" &&
+    assignment.status !== "cancelled" // Exclude cancelled assignments
   ).sort((a, b) => 
     (a.event?.date || "").localeCompare(b.event?.date || "")
   );

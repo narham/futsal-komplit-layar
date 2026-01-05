@@ -382,6 +382,8 @@ export type Database = {
       }
       event_assignments: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_by: string | null
           created_at: string | null
           deleted_at: string | null
           event_id: string
@@ -392,6 +394,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
           created_at?: string | null
           deleted_at?: string | null
           event_id: string
@@ -402,6 +406,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
           created_at?: string | null
           deleted_at?: string | null
           event_id?: string
@@ -412,6 +418,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "event_assignments_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "active_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_assignments_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_assignments_event_id_fkey"
             columns: ["event_id"]
