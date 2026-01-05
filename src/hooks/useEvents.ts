@@ -347,6 +347,48 @@ export function useCompleteEvent() {
   });
 }
 
+export function useDeleteEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ eventId, userId }: { eventId: string; userId: string }) => {
+      // Get current event data for audit
+      const { data: event } = await supabase
+        .from("events")
+        .select("name, status")
+        .eq("id", eventId)
+        .single();
+
+      if (!event) throw new Error("Event tidak ditemukan");
+
+      // Soft delete event
+      const { error } = await supabase
+        .from("events")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", eventId);
+
+      if (error) throw error;
+
+      // Log ke audit_logs
+      await supabase.from("audit_logs").insert({
+        entity_type: "event",
+        entity_id: eventId,
+        action: "DELETE",
+        actor_id: userId,
+        old_data: { deleted_at: null, name: event.name, status: event.status },
+        new_data: { deleted_at: new Date().toISOString() },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      toast.success("Event berhasil dihapus");
+    },
+    onError: (error) => {
+      toast.error("Gagal menghapus event: " + error.message);
+    },
+  });
+}
+
 // Helper function to get status display
 export function getEventStatusDisplay(status: EventStatus) {
   switch (status) {
