@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Calendar, MapPin, Award, Edit, Loader2, Power, User } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Award, Edit, Loader2, Power, User, Eye, Download } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -15,20 +15,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useReferee, useUpdateReferee, useToggleRefereeStatus, LICENSE_LEVELS, getLicenseBadgeColor } from "@/hooks/useReferees";
 import { useKabupatenKotaList } from "@/hooks/useOrganization";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSignedUrl, createSignedDownloadUrl } from "@/hooks/useSignedUrl";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { toast } from "sonner";
 
 export default function RefereeDetail() {
   const { id: refereeId } = useParams();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isAdminProvinsi } = useAuth();
   
   const { data: referee, isLoading } = useReferee(refereeId || "");
   const { data: kabupatenKotaList } = useKabupatenKotaList();
   const updateReferee = useUpdateReferee();
   const toggleStatus = useToggleRefereeStatus();
 
+  // Signed URLs for private documents
+  const { data: licenseSignedUrl } = useSignedUrl(referee?.license_photo_url);
+  const { data: ktpSignedUrl } = useSignedUrl(referee?.ktp_photo_url);
+
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewType, setPreviewType] = useState<'license' | 'ktp'>('license');
   const [editForm, setEditForm] = useState({
     full_name: "",
     license_level: "",
@@ -82,6 +90,41 @@ export default function RefereeDetail() {
       id: referee.id,
       isActive: !referee.is_active,
     });
+  };
+
+  const handleOpenPreview = (type: 'license' | 'ktp') => {
+    setPreviewType(type);
+    setShowPreviewDialog(true);
+  };
+
+  const handleDownload = async (type: 'license' | 'ktp') => {
+    const url = type === 'license' ? referee.license_photo_url : referee.ktp_photo_url;
+    if (!url) return;
+    
+    try {
+      const signedUrl = await createSignedDownloadUrl(url, 'documents');
+      if (!signedUrl) {
+        toast.error('Gagal membuat link download');
+        return;
+      }
+      
+      const link = document.createElement('a');
+      link.href = signedUrl;
+      link.download = `${referee.full_name.replace(/\s+/g, '_')}-${type}-${Date.now()}.jpg`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Download berhasil dimulai');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Gagal mendownload dokumen');
+    }
+  };
+
+  const getPreviewUrl = () => {
+    return previewType === 'license' ? licenseSignedUrl : ktpSignedUrl;
   };
 
   return (
@@ -231,13 +274,32 @@ export default function RefereeDetail() {
           <TabsContent value="documents" className="mt-4 space-y-3">
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm font-medium mb-3">Foto Lisensi</p>
-                {referee.license_photo_url ? (
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium">Foto Lisensi</p>
+                  {isAdminProvinsi() && referee.license_photo_url && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleOpenPreview('license')}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        Lihat
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDownload('license')}>
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {licenseSignedUrl ? (
                   <img 
-                    src={referee.license_photo_url} 
+                    src={licenseSignedUrl} 
                     alt="Lisensi" 
-                    className="w-full h-48 object-cover rounded-lg"
+                    className="w-full h-48 object-cover rounded-lg cursor-pointer"
+                    onClick={() => isAdminProvinsi() && handleOpenPreview('license')}
                   />
+                ) : referee.license_photo_url ? (
+                  <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
                 ) : (
                   <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
                     <p className="text-muted-foreground">Belum ada foto lisensi</p>
@@ -247,13 +309,32 @@ export default function RefereeDetail() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-sm font-medium mb-3">Foto KTP</p>
-                {referee.ktp_photo_url ? (
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium">Foto KTP</p>
+                  {isAdminProvinsi() && referee.ktp_photo_url && (
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleOpenPreview('ktp')}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        Lihat
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleDownload('ktp')}>
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {ktpSignedUrl ? (
                   <img 
-                    src={referee.ktp_photo_url} 
+                    src={ktpSignedUrl} 
                     alt="KTP" 
-                    className="w-full h-48 object-cover rounded-lg"
+                    className="w-full h-48 object-cover rounded-lg cursor-pointer"
+                    onClick={() => isAdminProvinsi() && handleOpenPreview('ktp')}
                   />
+                ) : referee.ktp_photo_url ? (
+                  <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
                 ) : (
                   <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
                     <p className="text-muted-foreground">Belum ada foto KTP</p>
@@ -325,6 +406,38 @@ export default function RefereeDetail() {
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>Batal</Button>
             <Button onClick={handleEditSave} disabled={updateReferee.isPending}>
               {updateReferee.isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{previewType === 'license' ? 'Foto Lisensi' : 'Foto KTP'}</DialogTitle>
+            <DialogDescription>{referee.full_name}</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center overflow-auto">
+            {getPreviewUrl() ? (
+              <img 
+                src={getPreviewUrl()!} 
+                alt={previewType === 'license' ? 'Lisensi' : 'KTP'} 
+                className="max-h-[60vh] object-contain rounded-lg"
+              />
+            ) : (
+              <div className="h-64 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPreviewDialog(false)}>
+              Tutup
+            </Button>
+            <Button onClick={() => handleDownload(previewType)}>
+              <Download className="h-4 w-4 mr-1" />
+              Download
             </Button>
           </DialogFooter>
         </DialogContent>
