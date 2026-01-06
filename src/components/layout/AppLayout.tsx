@@ -17,7 +17,7 @@ export const AppLayout = ({ children, title, showBackButton, onBack }: AppLayout
       {showBackButton ? (
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           <div className="flex items-center gap-3 px-4 py-3">
-            <Button variant="ghost" size="icon" onClick={onBack}>
+            <Button variant="ghost" size="icon" onClick={onBack} className="min-h-[44px] min-w-[44px]">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             {title && <h1 className="text-lg font-semibold">{title}</h1>}
@@ -26,7 +26,7 @@ export const AppLayout = ({ children, title, showBackButton, onBack }: AppLayout
       ) : (
         <Header title={title} />
       )}
-      <main className="flex-1 pb-20 md:pb-6">
+      <main className="flex-1 pb-24 md:pb-6">
         {children}
       </main>
       {!showBackButton && <MobileNav />}

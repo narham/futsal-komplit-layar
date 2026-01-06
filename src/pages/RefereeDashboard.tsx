@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,22 +6,16 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  LayoutDashboard,
   CalendarDays,
-  Wallet,
-  User,
   Trophy,
   DollarSign,
   Clock,
   CheckCircle2,
   ChevronRight,
-  MapPin,
   Calendar,
   Bell,
   Loader2,
   AlertCircle,
-  BookOpen,
-  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -30,6 +24,7 @@ import { useUpcomingRefereeEvents, usePendingAssignments } from "@/hooks/useRefe
 import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { RefereeNav } from "@/components/layout/RefereeNav";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -64,7 +59,6 @@ const getLicenseLabel = (level: string | null) => {
 };
 
 export default function RefereeDashboard() {
-  const location = useLocation();
   const [activeTab, setActiveTab] = useState("active");
   
   const { user } = useAuth();
@@ -73,14 +67,6 @@ export default function RefereeDashboard() {
   const { data: honors } = useHonors();
   const { data: upcomingEvents } = useUpcomingRefereeEvents();
   const { data: pendingAssignments } = usePendingAssignments();
-
-  const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/referee" },
-    { icon: CalendarDays, label: "Event", path: "/referee/events" },
-    { icon: BookOpen, label: "Belajar", path: "/referee/learning" },
-    { icon: MessageSquare, label: "Diskusi", path: "/referee/discussions" },
-    { icon: User, label: "Profil", path: "/referee/profile" },
-  ];
 
   // Get completed honors
   const completedHonors = honors?.filter(h => h.status === "verified") || [];
@@ -97,7 +83,7 @@ export default function RefereeDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="bg-primary text-primary-foreground p-4 pb-12">
         <div className="flex items-center justify-between mb-4">
@@ -116,7 +102,7 @@ export default function RefereeDashboard() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-primary-foreground hover:bg-primary-foreground/10"
+            className="text-primary-foreground hover:bg-primary-foreground/10 min-h-[44px] min-w-[44px]"
           >
             <Bell className="h-5 w-5" />
           </Button>
@@ -172,7 +158,7 @@ export default function RefereeDashboard() {
         {/* Pending Assignment Alert */}
         {pendingAssignments && pendingAssignments.length > 0 && (
           <Link to="/referee/events">
-            <Alert className="bg-warning/10 border-warning/30 cursor-pointer hover:bg-warning/15 transition-colors">
+            <Alert className="bg-warning/10 border-warning/30 cursor-pointer hover:bg-warning/15 active:bg-warning/20 transition-colors">
               <AlertCircle className="h-4 w-4 text-warning" />
               <AlertDescription className="text-sm text-warning flex items-center justify-between">
                 <span>{pendingAssignments.length} penugasan menunggu konfirmasi</span>
@@ -192,7 +178,7 @@ export default function RefereeDashboard() {
                   Event Mendatang
                 </CardTitle>
                 <Link to="/referee/events">
-                  <Button variant="ghost" size="sm" className="text-xs">
+                  <Button variant="ghost" size="sm" className="text-xs min-h-[36px]">
                     Lihat Semua
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
@@ -234,7 +220,7 @@ export default function RefereeDashboard() {
         {/* Pending Honor Alert */}
         {pendingAmount > 0 && (
           <Link to="/referee/honor">
-            <Card className="bg-warning/10 border-warning/30">
+            <Card className="bg-warning/10 border-warning/30 active:bg-warning/15 transition-colors">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-warning/20 rounded-full flex items-center justify-center">
@@ -262,10 +248,10 @@ export default function RefereeDashboard() {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <div className="px-4">
                 <TabsList className="w-full grid grid-cols-2">
-                  <TabsTrigger value="active">
+                  <TabsTrigger value="active" className="min-h-[40px]">
                     Menunggu ({pendingHonors.length})
                   </TabsTrigger>
-                  <TabsTrigger value="completed">
+                  <TabsTrigger value="completed" className="min-h-[40px]">
                     Selesai ({completedHonors.length})
                   </TabsTrigger>
                 </TabsList>
@@ -282,11 +268,11 @@ export default function RefereeDashboard() {
                     <Card key={honor.id} className="border-l-4 border-l-warning">
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-semibold text-sm">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-sm truncate">
                               {honor.events?.name || "Event tidak ditemukan"}
                             </h4>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground truncate">
                               {honor.notes || "Tidak ada catatan"}
                             </p>
                           </div>
@@ -318,8 +304,8 @@ export default function RefereeDashboard() {
                     <Card key={honor.id}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-semibold text-sm">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-sm truncate">
                               {honor.events?.name || "Event tidak ditemukan"}
                             </h4>
                             <p className="text-xs text-muted-foreground">
@@ -347,27 +333,7 @@ export default function RefereeDashboard() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
-        <div className="grid grid-cols-5 h-16">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex flex-col items-center justify-center gap-1 transition-colors ${
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <item.icon className={`h-5 w-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <RefereeNav />
     </div>
   );
 }

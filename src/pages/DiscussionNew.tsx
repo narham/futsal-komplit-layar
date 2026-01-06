@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Send, MessageSquare } from "lucide-react";
+import { Send, MessageSquare } from "lucide-react";
 import {
   useCreateTopic,
   DISCUSSION_CATEGORIES,
@@ -53,24 +53,17 @@ const DiscussionNew = () => {
   };
 
   return (
-    <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/referee/discussions")}
-          className="mb-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Kembali
-        </Button>
-
+    <AppLayout
+      title="Topik Baru"
+      showBackButton
+      onBack={() => navigate("/referee/discussions")}
+    >
+      <div className="p-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
               <MessageSquare className="h-5 w-5 text-primary" />
-              Buat Topik Diskusi Baru
+              Buat Topik Diskusi
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -85,50 +78,49 @@ const DiscussionNew = () => {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={200}
+                  className="h-11"
                 />
                 <p className="text-xs text-muted-foreground">
                   {title.length}/200 karakter
                 </p>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="category">
-                    Kategori <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger id="category">
-                      <SelectValue placeholder="Pilih kategori" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DISCUSSION_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">
+                  Kategori <span className="text-destructive">*</span>
+                </Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="category" className="h-11">
+                    <SelectValue placeholder="Pilih kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DISCUSSION_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="law">Referensi Law (Opsional)</Label>
-                  <Select value={lawReference} onValueChange={setLawReference}>
-                    <SelectTrigger id="law">
-                      <SelectValue placeholder="Pilih Law" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Tidak ada</SelectItem>
-                      {LOTG_CATEGORIES.map((cat) => (
-                        <SelectItem
-                          key={cat.law}
-                          value={cat.law.toString()}
-                        >
-                          Law {cat.law}: {cat.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="law">Referensi Law (Opsional)</Label>
+                <Select value={lawReference} onValueChange={setLawReference}>
+                  <SelectTrigger id="law" className="h-11">
+                    <SelectValue placeholder="Pilih Law" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tidak ada</SelectItem>
+                    {LOTG_CATEGORIES.map((cat) => (
+                      <SelectItem
+                        key={cat.law}
+                        value={cat.law.toString()}
+                      >
+                        Law {cat.law}: {cat.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -140,23 +132,24 @@ const DiscussionNew = () => {
                   placeholder="Jelaskan topik diskusi Anda secara detail. Sertakan contoh situasi jika ada..."
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[200px]"
+                  className="min-h-[160px]"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Jelaskan dengan detail agar wasit lain dapat memahami dan
-                  memberikan tanggapan yang relevan
+                  Jelaskan dengan detail agar wasit lain dapat memberikan tanggapan yang relevan
                 </p>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              {/* Sticky bottom action */}
+              <div className="flex gap-3 pt-4 sticky bottom-0 bg-card pb-safe">
                 <Button
                   type="button"
                   variant="outline"
+                  className="flex-1 h-12"
                   onClick={() => navigate("/referee/discussions")}
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={createTopic.isPending}>
+                <Button type="submit" disabled={createTopic.isPending} className="flex-1 h-12">
                   <Send className="h-4 w-4 mr-2" />
                   {createTopic.isPending ? "Mengirim..." : "Buat Topik"}
                 </Button>
