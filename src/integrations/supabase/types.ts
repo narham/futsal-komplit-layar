@@ -470,6 +470,7 @@ export type Database = {
           date: string
           deleted_at: string | null
           description: string | null
+          document_path: string | null
           id: string
           kabupaten_kota_id: string | null
           location: string | null
@@ -484,6 +485,7 @@ export type Database = {
           date: string
           deleted_at?: string | null
           description?: string | null
+          document_path?: string | null
           id?: string
           kabupaten_kota_id?: string | null
           location?: string | null
@@ -498,6 +500,7 @@ export type Database = {
           date?: string
           deleted_at?: string | null
           description?: string | null
+          document_path?: string | null
           id?: string
           kabupaten_kota_id?: string | null
           location?: string | null
