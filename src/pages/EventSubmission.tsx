@@ -10,13 +10,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, CalendarIcon, MapPin, Users, Trophy, CheckCircle2, FileText } from "lucide-react";
+import { DocumentUpload } from "@/components/ui/document-upload";
+import { ArrowLeft, CalendarIcon, MapPin, Trophy, CheckCircle2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useCreateEvent } from "@/hooks/useEvents";
 import { useKabupatenKotaList } from "@/hooks/useOrganization";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const EventSubmission = () => {
   const navigate = useNavigate();
@@ -27,6 +30,7 @@ const EventSubmission = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     eventName: "",
@@ -37,11 +41,18 @@ const EventSubmission = () => {
   });
 
   const [eventDate, setEventDate] = useState<Date | undefined>();
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentPreview, setDocumentPreview] = useState<string | null>(null);
 
   const totalSteps = 3;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleDocumentChange = (preview: string | null, file: File | null) => {
+    setDocumentPreview(preview);
+    setDocumentFile(file);
   };
 
   const isStep1Valid = formData.eventName.trim() !== "";
@@ -81,7 +92,30 @@ const EventSubmission = () => {
     if (!eventDate || !user) return;
 
     try {
-      await createEvent.mutateAsync({
+      setIsUploading(true);
+      let documentPath: string | undefined;
+
+      // Upload document if exists
+      if (documentFile) {
+        const fileExt = documentFile.name.split(".").pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("documents")
+          .upload(fileName, documentFile);
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          toast.error("Gagal mengupload dokumen: " + uploadError.message);
+          setIsUploading(false);
+          return;
+        }
+
+        documentPath = fileName;
+      }
+
+      // Create event
+      const eventData = await createEvent.mutateAsync({
         name: formData.eventName,
         date: format(eventDate, "yyyy-MM-dd"),
         location: formData.location,
@@ -89,12 +123,36 @@ const EventSubmission = () => {
         category: formData.category || undefined,
         kabupaten_kota_id: formData.kabupatenKotaId || undefined,
         created_by: user.id,
+        document_path: documentPath,
       });
-      
+
+      // Send email notification if document was uploaded
+      if (documentPath && eventData) {
+        try {
+          const { error: notifyError } = await supabase.functions.invoke(
+            "send-event-notification",
+            {
+              body: { eventId: eventData.id },
+            }
+          );
+
+          if (notifyError) {
+            console.error("Notification error:", notifyError);
+            // Don't block submission, just log the error
+          } else {
+            toast.success("Notifikasi email berhasil dikirim");
+          }
+        } catch (err) {
+          console.error("Failed to send notification:", err);
+        }
+      }
+
       setShowConfirmation(false);
       setIsSubmitted(true);
     } catch (error) {
       // Error handled by mutation
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -109,6 +167,7 @@ const EventSubmission = () => {
             <h2 className="text-xl font-bold mb-2">Event Berhasil Diajukan!</h2>
             <p className="text-muted-foreground mb-4">
               Pengajuan event Anda sedang ditinjau oleh Admin Provinsi.
+              {documentFile && " Email notifikasi telah dikirim ke asosiasi."}
             </p>
             <div className="flex items-center justify-center gap-2 mb-6">
               <span className="text-sm text-muted-foreground">Status:</span>
@@ -120,6 +179,9 @@ const EventSubmission = () => {
                 {eventDate && format(eventDate, "d MMMM yyyy", { locale: id })}
               </p>
               <p className="text-sm text-muted-foreground">{formData.location}</p>
+              {documentFile && (
+                <p className="text-sm text-primary mt-2">📎 {documentFile.name}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Button className="w-full" onClick={() => navigate("/events")}>
@@ -277,19 +339,19 @@ const EventSubmission = () => {
           </Card>
         )}
 
-        {/* Step 3: Description */}
+        {/* Step 3: Description & Document */}
         {currentStep === 3 && (
           <Card>
             <CardHeader>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-2">
                 <FileText className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle className="text-lg">Deskripsi</CardTitle>
+              <CardTitle className="text-lg">Deskripsi & Dokumen</CardTitle>
               <CardDescription>
-                Tambahkan informasi tambahan tentang event (opsional)
+                Tambahkan informasi dan surat permohonan (opsional)
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="description">Deskripsi Event</Label>
                 <Textarea
@@ -297,9 +359,20 @@ const EventSubmission = () => {
                   placeholder="Jelaskan detail event, jumlah tim, format pertandingan, dll."
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
-                  rows={5}
+                  rows={4}
                 />
               </div>
+
+              <DocumentUpload
+                value={documentPreview}
+                file={documentFile}
+                onChange={handleDocumentChange}
+                label="Surat Permohonan"
+                maxSizeMB={5}
+              />
+              <p className="text-xs text-muted-foreground">
+                Upload surat permohonan untuk dikirim ke email asosiasi
+              </p>
             </CardContent>
           </Card>
         )}
@@ -348,21 +421,33 @@ const EventSubmission = () => {
                 <span className="text-sm font-medium">{formData.category}</span>
               </div>
             )}
+            {documentFile && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Dokumen</span>
+                <span className="text-sm font-medium text-primary">📎 {documentFile.name}</span>
+              </div>
+            )}
           </div>
+          {documentFile && (
+            <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+              Email notifikasi akan dikirim ke asosiasi dengan lampiran dokumen
+            </p>
+          )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               className="w-full sm:w-auto"
               onClick={() => setShowConfirmation(false)}
+              disabled={isUploading || createEvent.isPending}
             >
               Batal
             </Button>
             <Button
               className="w-full sm:w-auto"
               onClick={handleSubmit}
-              disabled={createEvent.isPending}
+              disabled={isUploading || createEvent.isPending}
             >
-              {createEvent.isPending ? "Mengajukan..." : "Konfirmasi & Ajukan"}
+              {isUploading || createEvent.isPending ? "Mengajukan..." : "Konfirmasi & Ajukan"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -138,12 +138,20 @@ export function useCreateEvent() {
       description?: string;
       kabupaten_kota_id?: string;
       created_by?: string;
+      document_path?: string;
     }) => {
       // Create event with DIAJUKAN status
       const { data: eventData, error: eventError } = await supabase
         .from("events")
         .insert({
-          ...event,
+          name: event.name,
+          date: event.date,
+          location: event.location,
+          category: event.category,
+          description: event.description,
+          kabupaten_kota_id: event.kabupaten_kota_id,
+          created_by: event.created_by,
+          document_path: event.document_path,
           status: "DIAJUKAN",
         })
         .select()
