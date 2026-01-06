@@ -6,10 +6,19 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useEvents, getEventStatusDisplay, EventStatus } from "@/hooks/useEvents";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+
+const statusTabs = [
+  { value: "all", label: "Semua" },
+  { value: "DIAJUKAN", label: "Diajukan" },
+  { value: "DISETUJUI", label: "Disetujui" },
+  { value: "DITOLAK", label: "Ditolak" },
+  { value: "SELESAI", label: "Selesai" },
+];
 
 export default function Events() {
   const navigate = useNavigate();
@@ -37,27 +46,37 @@ export default function Events() {
               placeholder="Cari event..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-11"
             />
           </div>
-          <Button variant="outline" size="icon" onClick={() => navigate("/events/calendar")} title="Lihat Kalender">
+          <Button variant="outline" size="icon" onClick={() => navigate("/events/calendar")} title="Lihat Kalender" className="h-11 w-11">
             <CalendarDays className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" className="h-11 w-11">
             <Filter className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-5">
-            <TabsTrigger value="all" className="text-xs">Semua</TabsTrigger>
-            <TabsTrigger value="DIAJUKAN" className="text-xs">Diajukan</TabsTrigger>
-            <TabsTrigger value="DISETUJUI" className="text-xs">Disetujui</TabsTrigger>
-            <TabsTrigger value="DITOLAK" className="text-xs">Ditolak</TabsTrigger>
-            <TabsTrigger value="SELESAI" className="text-xs">Selesai</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Scrollable Tabs */}
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex gap-2 pb-2">
+            {statusTabs.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={cn(
+                  "inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition-colors min-h-[40px] min-w-[80px]",
+                  activeTab === tab.value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 active:bg-muted/60"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" className="h-1" />
+        </ScrollArea>
 
         {/* Event List */}
         <div className="space-y-3">
@@ -77,25 +96,25 @@ export default function Events() {
 
               return (
                 <Link key={event.id} to={`/events/${event.id}`}>
-                  <Card className="hover:shadow-md transition-shadow">
+                  <Card className="hover:shadow-md active:bg-muted/50 transition-all">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-sm mb-1">{event.name}</h3>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm mb-1 truncate">{event.name}</h3>
                           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
+                              <Calendar className="h-3 w-3 flex-shrink-0" />
                               {format(new Date(event.date), "d MMM yyyy", { locale: id })}
                             </span>
                             {event.location && (
                               <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {event.location}
+                                <MapPin className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate max-w-[120px]">{event.location}</span>
                               </span>
                             )}
                           </div>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 ml-2" />
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -104,7 +123,7 @@ export default function Events() {
                             {statusDisplay.label}
                           </StatusBadge>
                           {event.kabupaten_kota && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground truncate max-w-[100px]">
                               {event.kabupaten_kota.name}
                             </span>
                           )}
@@ -126,10 +145,11 @@ export default function Events() {
         {/* FAB */}
         <Button
           size="lg"
-          className="fixed bottom-24 right-4 md:bottom-8 rounded-full shadow-lg h-14 w-14 p-0"
+          className="fixed bottom-24 right-4 md:bottom-8 rounded-full shadow-lg h-14 px-5 gap-2"
           onClick={() => navigate("/events/submit")}
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-5 w-5" />
+          <span className="font-medium">Ajukan</span>
         </Button>
       </div>
     </AppLayout>

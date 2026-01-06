@@ -10,12 +10,8 @@ import {
   FileCheck,
   Plus,
   X,
-  LayoutDashboard,
-  CalendarDays,
-  User,
   Loader2
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,13 +20,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import {
   Select,
   SelectContent,
@@ -42,6 +38,7 @@ import { useHonors, useCreateHonor, useUpdateHonor, useSubmitHonor, useHonorStat
 import { useEvents } from "@/hooks/useEvents";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { RefereeNav } from "@/components/layout/RefereeNav";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -93,9 +90,8 @@ const getStatusConfig = (status: Honor["status"]) => {
 };
 
 export default function RefereeHonor() {
-  const location = useLocation();
   const [showInputForm, setShowInputForm] = useState(false);
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showSubmitDrawer, setShowSubmitDrawer] = useState(false);
   
   // Form state
   const [selectedEvent, setSelectedEvent] = useState("");
@@ -110,13 +106,6 @@ export default function RefereeHonor() {
   const createHonor = useCreateHonor();
   const updateHonor = useUpdateHonor();
   const submitHonor = useSubmitHonor();
-
-  const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/referee" },
-    { icon: CalendarDays, label: "Event", path: "/referee/events" },
-    { icon: Wallet, label: "Honor", path: "/referee/honor" },
-    { icon: User, label: "Profil", path: "/referee/profile" },
-  ];
 
   const validateForm = (): boolean => {
     if (!selectedEvent) {
@@ -154,7 +143,7 @@ export default function RefereeHonor() {
 
   const handleSubmit = () => {
     if (!validateForm()) return;
-    setShowSubmitDialog(true);
+    setShowSubmitDrawer(true);
   };
 
   const confirmSubmit = async () => {
@@ -166,7 +155,7 @@ export default function RefereeHonor() {
     });
 
     resetForm();
-    setShowSubmitDialog(false);
+    setShowSubmitDrawer(false);
   };
 
   const resetForm = () => {
@@ -202,7 +191,7 @@ export default function RefereeHonor() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="bg-gradient-to-br from-primary to-accent px-4 pt-12 pb-6">
         <h1 className="text-xl font-bold text-primary-foreground mb-1">Honor Wasit</h1>
@@ -256,7 +245,7 @@ export default function RefereeHonor() {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8"
+                  className="h-10 w-10"
                   onClick={resetForm}
                 >
                   <X className="h-4 w-4" />
@@ -276,7 +265,7 @@ export default function RefereeHonor() {
               <div className="space-y-2">
                 <Label htmlFor="event">Event <span className="text-destructive">*</span></Label>
                 <Select value={selectedEvent} onValueChange={setSelectedEvent}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12">
                     <SelectValue placeholder="Pilih event..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -334,7 +323,7 @@ export default function RefereeHonor() {
                     placeholder="0"
                     value={honorAmount}
                     onChange={(e) => handleAmountChange(e.target.value)}
-                    className="pl-10 text-right text-lg font-semibold"
+                    className="pl-10 text-right text-lg font-semibold h-12"
                     maxLength={15}
                   />
                 </div>
@@ -368,7 +357,7 @@ export default function RefereeHonor() {
               <div className="flex gap-3 pt-2">
                 <Button 
                   variant="outline" 
-                  className="flex-1"
+                  className="flex-1 h-12"
                   onClick={handleSaveDraft}
                   disabled={createHonor.isPending}
                 >
@@ -379,7 +368,7 @@ export default function RefereeHonor() {
                   )}
                 </Button>
                 <Button 
-                  className="flex-1"
+                  className="flex-1 h-12"
                   onClick={handleSubmit}
                   disabled={createHonor.isPending}
                 >
@@ -438,7 +427,7 @@ export default function RefereeHonor() {
                       </div>
 
                       {entry.notes && (
-                        <p className="text-xs text-muted-foreground mb-2">
+                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                           {entry.notes}
                         </p>
                       )}
@@ -452,6 +441,7 @@ export default function RefereeHonor() {
                             size="sm" 
                             onClick={() => submitDraft(entry)}
                             disabled={updateHonor.isPending}
+                            className="min-h-[36px]"
                           >
                             <Send className="h-3 w-3 mr-1" />
                             Ajukan
@@ -467,52 +457,32 @@ export default function RefereeHonor() {
         </div>
       </div>
 
-      {/* Submit Confirmation Dialog */}
-      <Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Konfirmasi Pengajuan</DialogTitle>
-            <DialogDescription>
+      {/* Submit Confirmation Drawer (Mobile-optimized) */}
+      <Drawer open={showSubmitDrawer} onOpenChange={setShowSubmitDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Konfirmasi Pengajuan</DrawerTitle>
+            <DrawerDescription>
               Setelah diajukan, honor akan menunggu verifikasi dari admin. 
               Anda tidak dapat mengubah data setelah diajukan.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
-              Batal
-            </Button>
-            <Button onClick={confirmSubmit} disabled={createHonor.isPending}>
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerFooter className="pb-safe">
+            <Button onClick={confirmSubmit} disabled={createHonor.isPending} className="h-12">
               {createHonor.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
               Ya, Ajukan
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button variant="outline" onClick={() => setShowSubmitDrawer(false)} className="h-12">
+              Batal
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
-        <div className="grid grid-cols-4 h-16">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex flex-col items-center justify-center gap-1 transition-colors ${
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <item.icon className={`h-5 w-5 ${isActive ? "stroke-[2.5]" : ""}`} />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <RefereeNav />
     </div>
   );
 }
