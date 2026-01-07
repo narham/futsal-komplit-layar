@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Search, Filter } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Filter, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -14,6 +16,7 @@ import { RefereeCard } from "@/components/reviews/RefereeCard";
 import { usePublicReferees, useAfkOrigins } from "@/hooks/usePublicReviews";
 
 export default function PublicRefereeList() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [afkFilter, setAfkFilter] = useState<string>("");
 
@@ -28,7 +31,19 @@ export default function PublicRefereeList() {
       {/* Header */}
       <div className="bg-gradient-to-b from-primary/5 to-background pt-8 pb-6 px-4">
         <div className="max-w-md mx-auto">
-          <FFSSLogo size="lg" />
+          <div className="flex items-center gap-3 mb-4">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate("/login")}
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <FFSSLogo size="lg" />
+            </div>
+          </div>
 
           <div className="mt-8 text-center">
             <h2 className="text-2xl font-bold text-foreground">
