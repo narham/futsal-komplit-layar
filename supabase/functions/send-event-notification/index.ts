@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,14 +21,28 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendApiKey) {
-      console.error("RESEND_API_KEY not configured");
+    // SMTP Configuration
+    const smtpHostname = Deno.env.get("SMTP_HOSTNAME");
+    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "465");
+    const smtpUsername = Deno.env.get("SMTP_USERNAME");
+    const smtpPassword = Deno.env.get("SMTP_PASSWORD");
+    const smtpFrom = Deno.env.get("SMTP_FROM") || smtpUsername;
+    const smtpTls = Deno.env.get("SMTP_TLS") === "true";
+
+    if (!smtpHostname || !smtpUsername || !smtpPassword) {
+      console.error("SMTP not configured - missing required environment variables");
       return new Response(
         JSON.stringify({ error: "Email service not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("SMTP Configuration loaded:", { 
+      hostname: smtpHostname, 
+      port: smtpPort, 
+      tls: smtpTls,
+      from: smtpFrom 
+    });
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -66,7 +80,8 @@ const handler = async (req: Request): Promise<Response> => {
       day: "numeric",
     });
 
-    let attachments: { filename: string; content: string }[] = [];
+    // Prepare attachments
+    let attachmentList: { filename: string; content: Uint8Array; contentType: string; encoding: "binary" }[] = [];
 
     // Download document if exists
     if (event.document_path) {
@@ -79,26 +94,33 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("Failed to download document:", downloadError);
       } else if (fileData) {
         const arrayBuffer = await fileData.arrayBuffer();
-        const base64Content = btoa(
-          new Uint8Array(arrayBuffer).reduce(
-            (data, byte) => data + String.fromCharCode(byte),
-            ""
-          )
-        );
-
-        // Determine filename from path
         const filename = event.document_path.split("/").pop() || "surat-permohonan";
-        attachments.push({
+        
+        // Determine content type
+        let contentType = "application/octet-stream";
+        if (filename.endsWith(".pdf")) {
+          contentType = "application/pdf";
+        } else if (filename.endsWith(".jpg") || filename.endsWith(".jpeg")) {
+          contentType = "image/jpeg";
+        } else if (filename.endsWith(".png")) {
+          contentType = "image/png";
+        } else if (filename.endsWith(".doc")) {
+          contentType = "application/msword";
+        } else if (filename.endsWith(".docx")) {
+          contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+
+        attachmentList.push({
           filename,
-          content: base64Content,
+          content: new Uint8Array(arrayBuffer),
+          contentType,
+          encoding: "binary",
         });
-        console.log("Document attached:", filename);
+        console.log("Document attached:", filename, "Type:", contentType);
       }
     }
 
-    // Send email
-    const resend = new Resend(resendApiKey);
-    
+    // Build email HTML
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -154,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
               <span class="info-value" style="margin-top: 5px;">${event.description}</span>
             </div>
             ` : ""}
-            ${attachments.length > 0 ? `
+            ${attachmentList.length > 0 ? `
             <p style="margin-top: 15px; padding: 10px; background: #dbeafe; border-radius: 4px; color: #1e40af;">
               📎 Surat permohonan terlampir dalam email ini.
             </p>
@@ -170,27 +192,36 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     console.log("Sending email to:", ASSOCIATION_EMAIL);
-    
-    const { data: emailResult, error: emailError } = await resend.emails.send({
-      from: "FFI Sulsel <onboarding@resend.dev>",
-      to: [ASSOCIATION_EMAIL],
-      subject: `[Pengajuan Event] ${event.name}`,
-      html: emailHtml,
-      attachments: attachments.length > 0 ? attachments : undefined,
+
+    // Initialize SMTP client
+    const client = new SMTPClient({
+      connection: {
+        hostname: smtpHostname,
+        port: smtpPort,
+        tls: smtpTls,
+        auth: {
+          username: smtpUsername,
+          password: smtpPassword,
+        },
+      },
     });
 
-    if (emailError) {
-      console.error("Failed to send email:", emailError);
-      return new Response(
-        JSON.stringify({ error: "Failed to send email", details: emailError }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Send email
+    await client.send({
+      from: smtpFrom!,
+      to: ASSOCIATION_EMAIL,
+      subject: `[Pengajuan Event] ${event.name}`,
+      html: emailHtml,
+      attachments: attachmentList.length > 0 ? attachmentList : undefined,
+    });
 
-    console.log("Email sent successfully:", emailResult);
+    // Close connection
+    await client.close();
+
+    console.log("Email sent successfully via SMTP");
 
     return new Response(
-      JSON.stringify({ success: true, emailId: emailResult?.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
