@@ -273,6 +273,26 @@ export function useApproveEvent() {
         });
 
       if (approvalError) throw approvalError;
+
+      // Send approval notification email to event creator
+      try {
+        const { error: notifyError } = await supabase.functions.invoke(
+          "send-event-notification",
+          {
+            body: { 
+              eventId, 
+              type: "approval",
+              approvalNotes: notes 
+            },
+          }
+        );
+
+        if (notifyError) {
+          console.error("Failed to send approval notification:", notifyError);
+        }
+      } catch (err) {
+        console.error("Error sending approval notification:", err);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });

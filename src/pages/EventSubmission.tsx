@@ -126,13 +126,16 @@ const EventSubmission = () => {
         document_path: documentPath,
       });
 
-      // Send email notification if document was uploaded
-      if (documentPath && eventData) {
+      // Send email notification for event submission
+      if (eventData) {
         try {
           const { error: notifyError } = await supabase.functions.invoke(
             "send-event-notification",
             {
-              body: { eventId: eventData.id },
+              body: { 
+                eventId: eventData.id,
+                type: "submission"
+              },
             }
           );
 
@@ -140,7 +143,7 @@ const EventSubmission = () => {
             console.error("Notification error:", notifyError);
             // Don't block submission, just log the error
           } else {
-            toast.success("Notifikasi email berhasil dikirim");
+            toast.success("Notifikasi email berhasil dikirim ke asosiasi");
           }
         } catch (err) {
           console.error("Failed to send notification:", err);
