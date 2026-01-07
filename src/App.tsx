@@ -39,6 +39,7 @@ import UserManagement from "./pages/UserManagement";
 import AuditLogs from "./pages/AuditLogs";
 import DatabaseExport from "./pages/DatabaseExport";
 import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
 
 // Referee pages
 import RefereeDashboard from "./pages/RefereeDashboard";
@@ -256,6 +257,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin requireProfileComplete>
                   <Analytics />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute requireRole="admin_provinsi" requireProfileComplete>
+                  <Settings />
                 </ProtectedRoute>
               } 
             />
