@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft, Calendar, MapPin, Edit, UserPlus, CheckCircle, XCircle, Clock, Loader2, History, User, Ban, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Edit, UserPlus, CheckCircle, XCircle, Clock, Loader2, History, User, Ban, Trash2, FileText, Download, Maximize2 } from "lucide-react";
+import { useSignedUrl, createSignedDownloadUrl } from "@/hooks/useSignedUrl";
+import { toast } from "sonner";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -35,9 +37,38 @@ export default function EventDetail() {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelAssignmentDialog, setShowCancelAssignmentDialog] = useState(false);
+  const [showDocumentPreview, setShowDocumentPreview] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<EventAssignment | null>(null);
   const [notes, setNotes] = useState("");
   const [cancelReason, setCancelReason] = useState("");
+
+  // Fetch signed URL for event document
+  const { data: documentSignedUrl, isLoading: documentLoading } = useSignedUrl(event?.document_path);
+
+  const handleDownloadDocument = async () => {
+    if (!event?.document_path) return;
+    
+    try {
+      const signedUrl = await createSignedDownloadUrl(event.document_path, 'documents');
+      if (!signedUrl) {
+        toast.error('Gagal membuat link download');
+        return;
+      }
+      
+      const link = document.createElement('a');
+      link.href = signedUrl;
+      link.download = `${event.name.replace(/\s+/g, '_')}-dokumen.${event.document_path.split('.').pop()}`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Download berhasil dimulai');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Gagal mendownload dokumen');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -278,13 +309,21 @@ export default function EventDetail() {
 
         {/* Tabs */}
         <Tabs defaultValue="history" className="px-4 pb-8">
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="history">Riwayat</TabsTrigger>
             <TabsTrigger value="referees">
               Wasit
               {activeAssignments.length > 0 && (
                 <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
                   {activeAssignments.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="document">
+              Dokumen
+              {event.document_path && (
+                <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
+                  1
                 </span>
               )}
             </TabsTrigger>
@@ -431,8 +470,118 @@ export default function EventDetail() {
               </Card>
             )}
           </TabsContent>
+
+          <TabsContent value="document" className="mt-4">
+            {event.document_path ? (
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <FileText className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Surat Permohonan</p>
+                        <p className="text-xs text-muted-foreground">
+                          Diupload saat pengajuan event
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => setShowDocumentPreview(true)}
+                        disabled={documentLoading}
+                      >
+                        <Maximize2 className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={handleDownloadDocument}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Preview thumbnail for images */}
+                  {documentSignedUrl && event.document_path.match(/\.(jpg|jpeg|png)$/i) && (
+                    <div 
+                      className="mt-4 rounded-lg overflow-hidden border cursor-pointer"
+                      onClick={() => setShowDocumentPreview(true)}
+                    >
+                      <img 
+                        src={documentSignedUrl} 
+                        alt="Document preview"
+                        className="w-full h-48 object-cover hover:opacity-90 transition-opacity"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Info for PDF */}
+                  {event.document_path.match(/\.pdf$/i) && (
+                    <div className="mt-4 p-4 bg-muted/50 rounded-lg text-center">
+                      <FileText className="h-8 w-8 mx-auto mb-2 text-red-500" />
+                      <p className="text-sm text-muted-foreground">File PDF</p>
+                      <p className="text-xs text-muted-foreground">Klik preview atau download untuk melihat</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Tidak ada dokumen</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Document Preview Dialog */}
+      <Dialog open={showDocumentPreview} onOpenChange={setShowDocumentPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Surat Permohonan</DialogTitle>
+            <DialogDescription>{event?.name}</DialogDescription>
+          </DialogHeader>
+          
+          <div className="relative">
+            {documentLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : event?.document_path?.match(/\.(jpg|jpeg|png)$/i) ? (
+              <img 
+                src={documentSignedUrl || ''} 
+                alt="Document"
+                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+              />
+            ) : event?.document_path?.match(/\.pdf$/i) ? (
+              <iframe
+                src={documentSignedUrl || ''}
+                className="w-full h-[70vh] rounded-lg border"
+                title="PDF Preview"
+              />
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Format file tidak didukung untuk preview
+              </p>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleDownloadDocument}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Approve Dialog */}
       <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>

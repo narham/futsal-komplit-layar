@@ -14,6 +14,7 @@ export interface Event {
   description: string | null;
   created_by: string | null;
   kabupaten_kota_id: string | null;
+  document_path: string | null;
   created_at: string;
   updated_at: string;
   // Joined data
