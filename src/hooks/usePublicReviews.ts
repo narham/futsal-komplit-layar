@@ -24,57 +24,27 @@ export function usePublicReferees(search?: string, afkFilter?: string) {
   return useQuery({
     queryKey: ["public-referees", search, afkFilter],
     queryFn: async (): Promise<RefereeWithStats[]> => {
-      // First get user IDs with 'wasit' role
-      const { data: refereeRoles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "wasit");
-
-      if (rolesError) throw rolesError;
-
-      const refereeIds = refereeRoles?.map((r) => r.user_id) || [];
-
-      if (refereeIds.length === 0) {
-        return [];
-      }
-
-      // Get profiles for referees only
-      let profilesQuery = supabase
-        .from("profiles")
-        .select("id, full_name, profile_photo_url, license_level, afk_origin")
-        .eq("is_profile_complete", true)
-        .in("id", refereeIds);
-
-      if (search) {
-        profilesQuery = profilesQuery.ilike("full_name", `%${search}%`);
-      }
-
-      if (afkFilter) {
-        profilesQuery = profilesQuery.eq("afk_origin", afkFilter);
-      }
-
-      const { data: profiles, error: profilesError } = await profilesQuery;
-
-      if (profilesError) throw profilesError;
-
-      // Get review stats
-      const { data: stats, error: statsError } = await supabase
-        .from("referee_review_stats")
+      let query = supabase
+        .from("public_referees")
         .select("*");
 
-      if (statsError) throw statsError;
+      if (search) {
+        query = query.ilike("full_name", `%${search}%`);
+      }
 
-      // Merge profiles with stats
-      const statsMap = new Map(stats?.map((s) => [s.referee_id, s]) || []);
+      if (afkFilter && afkFilter !== "all") {
+        query = query.eq("afk_origin", afkFilter);
+      }
 
-      return (profiles || []).map((profile) => {
-        const stat = statsMap.get(profile.id);
-        return {
-          ...profile,
-          avg_rating: stat?.avg_rating ? Number(stat.avg_rating) : 0,
-          total_reviews: stat?.total_reviews || 0,
-        };
-      });
+      const { data, error } = await query.order("full_name");
+
+      if (error) throw error;
+
+      return (data || []).map((item) => ({
+        ...item,
+        avg_rating: Number(item.avg_rating) || 0,
+        total_reviews: Number(item.total_reviews) || 0,
+      }));
     },
   });
 }
@@ -170,10 +140,8 @@ export function useAfkOrigins() {
     queryKey: ["afk-origins"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("afk_origin")
-        .eq("is_profile_complete", true)
-        .not("afk_origin", "is", null);
+        .from("public_referees")
+        .select("afk_origin");
 
       if (error) throw error;
 

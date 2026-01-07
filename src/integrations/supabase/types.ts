@@ -97,6 +97,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "discussion_replies_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "discussion_replies_parent_reply_id_fkey"
             columns: ["parent_reply_id"]
             isOneToOne: false
@@ -171,6 +178,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discussion_topics_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
         ]
@@ -303,6 +317,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "evaluations_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "evaluations_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -328,6 +349,13 @@ export type Database = {
             columns: ["referee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
         ]
@@ -433,6 +461,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_assignments_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_assignments_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -458,6 +493,13 @@ export type Database = {
             columns: ["referee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_assignments_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
         ]
@@ -521,6 +563,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
           {
@@ -602,6 +651,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "honors_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "honors_verified_by_fkey"
             columns: ["verified_by"]
             isOneToOne: false
@@ -613,6 +669,13 @@ export type Database = {
             columns: ["verified_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "honors_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
         ]
@@ -716,6 +779,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "learning_materials_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
         ]
       }
       learning_progress: {
@@ -763,6 +833,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
         ]
@@ -907,6 +984,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profiles_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_kabupaten_kota_id_fkey"
             columns: ["kabupaten_kota_id"]
             isOneToOne: false
@@ -977,6 +1061,13 @@ export type Database = {
             columns: ["referee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_reviews_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
         ]
@@ -1060,6 +1151,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "events_kabupaten_kota_id_fkey"
             columns: ["kabupaten_kota_id"]
             isOneToOne: false
@@ -1138,6 +1236,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "honors_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "honors_verified_by_fkey"
             columns: ["verified_by"]
             isOneToOne: false
@@ -1149,6 +1254,13 @@ export type Database = {
             columns: ["verified_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "honors_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
         ]
@@ -1239,6 +1351,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profiles_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_kabupaten_kota_id_fkey"
             columns: ["kabupaten_kota_id"]
             isOneToOne: false
@@ -1246,6 +1365,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      public_referees: {
+        Row: {
+          afk_origin: string | null
+          avg_rating: number | null
+          full_name: string | null
+          id: string | null
+          license_level: string | null
+          profile_photo_url: string | null
+          total_reviews: number | null
+        }
+        Relationships: []
       }
       referee_review_stats: {
         Row: {
@@ -1266,6 +1397,13 @@ export type Database = {
             columns: ["referee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referee_reviews_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "public_referees"
             referencedColumns: ["id"]
           },
         ]
