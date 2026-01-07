@@ -38,6 +38,7 @@ import Approvals from "./pages/Approvals";
 import UserManagement from "./pages/UserManagement";
 import AuditLogs from "./pages/AuditLogs";
 import DatabaseExport from "./pages/DatabaseExport";
+import Analytics from "./pages/Analytics";
 
 // Referee pages
 import RefereeDashboard from "./pages/RefereeDashboard";
@@ -247,6 +248,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireRole="admin_provinsi" requireProfileComplete>
                   <DatabaseExport />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analytics" 
+              element={
+                <ProtectedRoute requireAdmin requireProfileComplete>
+                  <Analytics />
                 </ProtectedRoute>
               } 
             />

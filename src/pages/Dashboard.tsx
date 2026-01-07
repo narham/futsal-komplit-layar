@@ -12,7 +12,8 @@ import {
   FileCheck,
   AlertCircle,
   Loader2,
-  Database
+  Database,
+  BarChart3
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -87,6 +88,13 @@ export default function Dashboard() {
 
   // Additional actions for admin_provinsi only
   const adminProvinsiActions = isAdminProvinsi() ? [
+    { 
+      title: "Analytics", 
+      description: "Statistik & grafik", 
+      icon: BarChart3, 
+      path: "/analytics",
+      color: "bg-purple-100 text-purple-600"
+    },
     { 
       title: "Export Database", 
       description: "Backup data sistem", 
