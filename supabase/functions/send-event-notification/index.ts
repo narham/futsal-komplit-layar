@@ -7,8 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Association email for submission notifications
-const ASSOCIATION_EMAIL = "sulsel.afp@gmail.com";
+// Association email for submission notifications (from environment variable)
+const ASSOCIATION_EMAIL = Deno.env.get("ASSOCIATION_EMAIL") || "sulsel.afp@gmail.com";
 
 interface EventNotificationRequest {
   eventId: string;
