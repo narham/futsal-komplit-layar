@@ -826,6 +826,7 @@ export type Database = {
           birth_date: string | null
           created_at: string | null
           deleted_at: string | null
+          email: string | null
           full_name: string
           id: string
           is_active: boolean | null
@@ -849,6 +850,7 @@ export type Database = {
           birth_date?: string | null
           created_at?: string | null
           deleted_at?: string | null
+          email?: string | null
           full_name: string
           id: string
           is_active?: boolean | null
@@ -872,6 +874,7 @@ export type Database = {
           birth_date?: string | null
           created_at?: string | null
           deleted_at?: string | null
+          email?: string | null
           full_name?: string
           id?: string
           is_active?: boolean | null
