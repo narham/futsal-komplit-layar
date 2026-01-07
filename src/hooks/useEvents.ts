@@ -43,7 +43,7 @@ export interface EventApproval {
   } | null;
 }
 
-export function useEvents(filters?: { status?: EventStatus; kabupatenKotaId?: string }) {
+export function useEvents(filters?: { status?: EventStatus; kabupatenKotaId?: string; includeDeleted?: boolean }) {
   return useQuery({
     queryKey: ["events", filters],
     queryFn: async () => {
@@ -55,6 +55,11 @@ export function useEvents(filters?: { status?: EventStatus; kabupatenKotaId?: st
           kabupaten_kota:kabupaten_kota_id (id, name)
         `)
         .order("date", { ascending: false });
+
+      // Filter deleted events unless explicitly requested
+      if (!filters?.includeDeleted) {
+        query = query.is("deleted_at", null);
+      }
 
       if (filters?.status) {
         query = query.eq("status", filters.status);
@@ -82,12 +87,31 @@ export function useEvent(id: string) {
           kabupaten_kota:kabupaten_kota_id (id, name)
         `)
         .eq("id", id)
+        .is("deleted_at", null)
         .maybeSingle();
 
       if (error) throw error;
       return data as Event | null;
     },
     enabled: !!id,
+  });
+}
+
+// Hook to count active assignments for an event (for delete validation)
+export function useActiveAssignmentsCount(eventId: string) {
+  return useQuery({
+    queryKey: ["event-assignments-count", eventId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("event_assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .not("status", "in", "(cancelled,declined)");
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!eventId,
   });
 }
 
@@ -393,6 +417,42 @@ export function useDeleteEvent() {
     },
     onError: (error) => {
       toast.error("Gagal menghapus event: " + error.message);
+    },
+  });
+}
+
+// Helper function to get status display
+// Restore a soft-deleted event (Admin Provinsi only)
+export function useRestoreEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ eventId, userId }: { eventId: string; userId: string }) => {
+      // Restore the event
+      const { error } = await supabase
+        .from("events")
+        .update({ deleted_at: null })
+        .eq("id", eventId);
+
+      if (error) throw error;
+
+      // Log ke audit_logs
+      await supabase.from("audit_logs").insert({
+        entity_type: "event",
+        entity_id: eventId,
+        action: "RESTORE",
+        actor_id: userId,
+        old_data: { deleted_at: "was_deleted" },
+        new_data: { deleted_at: null },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["deleted-events"] });
+      toast.success("Event berhasil dipulihkan");
+    },
+    onError: (error) => {
+      toast.error("Gagal memulihkan event: " + error.message);
     },
   });
 }

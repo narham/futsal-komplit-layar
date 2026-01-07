@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useEvent, useEventApprovals, useApproveEvent, useRejectEvent, useCompleteEvent, useDeleteEvent, getEventStatusDisplay, EventStatus } from "@/hooks/useEvents";
+import { useEvent, useEventApprovals, useApproveEvent, useRejectEvent, useCompleteEvent, useDeleteEvent, useActiveAssignmentsCount, getEventStatusDisplay, EventStatus } from "@/hooks/useEvents";
 import { useEventAssignments, getRoleBadgeVariant, getStatusBadgeVariant, RefereeRole, AssignmentStatus, useCancelConfirmedAssignment, EventAssignment } from "@/hooks/useEventAssignments";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -18,11 +18,12 @@ import { id } from "date-fns/locale";
 export default function EventDetail() {
   const { id: eventId } = useParams();
   const navigate = useNavigate();
-  const { user, isAdminProvinsi } = useAuth();
+  const { user, isAdminProvinsi, isAdmin, kabupatenKotaId, role } = useAuth();
   
   const { data: event, isLoading } = useEvent(eventId || "");
   const { data: approvals } = useEventApprovals(eventId || "");
   const { data: assignments, isLoading: assignmentsLoading } = useEventAssignments(eventId || "");
+  const { data: activeAssignmentsCount = 0 } = useActiveAssignmentsCount(eventId || "");
   const approveEvent = useApproveEvent();
   const rejectEvent = useRejectEvent();
   const completeEvent = useCompleteEvent();
@@ -65,6 +66,14 @@ export default function EventDetail() {
   const canApprove = isAdminProvinsi() && event.status === "DIAJUKAN";
   const canComplete = isAdminProvinsi() && event.status === "DISETUJUI";
   const canAssignReferees = event.status === "DISETUJUI";
+  
+  // Delete permission:
+  // - Admin Provinsi: can delete any event
+  // - Admin Kab/Kota: can only delete DIAJUKAN events in their region
+  const canDelete = isAdminProvinsi() || 
+    (role === "admin_kab_kota" && 
+     event.kabupaten_kota_id === kabupatenKotaId && 
+     event.status === "DIAJUKAN");
   
   // Edit permission: Admin can always edit, creator can only edit if status is DIAJUKAN
   const canEdit = isAdminProvinsi() || 
@@ -170,7 +179,7 @@ export default function EventDetail() {
                   <Edit className="h-4 w-4" />
                 </Button>
               )}
-              {isAdminProvinsi() && (
+              {canDelete && (
                 <Button
                   variant="outline"
                   size="icon"
@@ -551,8 +560,17 @@ export default function EventDetail() {
               Anda yakin ingin menghapus event "{event?.name}"?
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 bg-muted rounded-lg text-sm text-muted-foreground">
-            <p>⚠️ Event yang dihapus tidak akan tampil di daftar, namun datanya tetap tersimpan untuk keperluan audit.</p>
+          <div className="space-y-3">
+            {activeAssignmentsCount > 0 && (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ Event ini memiliki <strong>{activeAssignmentsCount}</strong> penugasan wasit aktif yang akan terpengaruh.
+                </p>
+              </div>
+            )}
+            <div className="p-4 bg-muted rounded-lg text-sm text-muted-foreground">
+              <p>ℹ️ Event yang dihapus tidak akan tampil di daftar, namun datanya tetap tersimpan untuk keperluan audit. Admin Provinsi dapat memulihkan event yang sudah dihapus.</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Batal</Button>
