@@ -17,6 +17,7 @@ export default function Settings() {
   // Email settings state
   const [associationEmail, setAssociationEmail] = useState("");
   const [senderEmailName, setSenderEmailName] = useState("");
+  const [senderEmailAddress, setSenderEmailAddress] = useState("");
 
   // Organization settings state
   const [orgName, setOrgName] = useState("");
@@ -29,6 +30,7 @@ export default function Settings() {
     if (settingsMap) {
       setAssociationEmail(settingsMap.association_email || "");
       setSenderEmailName(settingsMap.sender_email_name || "");
+      setSenderEmailAddress(settingsMap.sender_email_address || "");
       setOrgName(settingsMap.organization_name || "");
       setOrgPhone(settingsMap.organization_phone || "");
       setOrgAddress(settingsMap.organization_address || "");
@@ -40,6 +42,7 @@ export default function Settings() {
     updateSettings.mutate([
       { key: "association_email", value: associationEmail },
       { key: "sender_email_name", value: senderEmailName },
+      { key: "sender_email_address", value: senderEmailAddress },
     ]);
   };
 
@@ -112,12 +115,26 @@ export default function Settings() {
                   <Label htmlFor="sender_name">Nama Pengirim Email</Label>
                   <Input
                     id="sender_name"
-                    placeholder="FFI Sulsel"
+                    placeholder="AFP Sulsel"
                     value={senderEmailName}
                     onChange={(e) => setSenderEmailName(e.target.value)}
                   />
                   <p className="text-sm text-muted-foreground">
                     Nama yang akan muncul sebagai pengirim email
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sender_address">Alamat Email Pengirim</Label>
+                  <Input
+                    id="sender_address"
+                    type="email"
+                    placeholder="noreply@afpsulsel.org"
+                    value={senderEmailAddress}
+                    onChange={(e) => setSenderEmailAddress(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Alamat email pengirim (harus domain yang terverifikasi di Resend)
                   </p>
                 </div>
 
