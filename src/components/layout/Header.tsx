@@ -32,30 +32,30 @@ export const Header = ({ title = "FFSS", onMenuClick }: HeaderProps) => {
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex text-primary-foreground hover:bg-primary-foreground/10"
+            className="hidden md:flex text-primary-foreground hover:bg-primary-foreground/10 min-h-[44px] min-w-[44px]"
             onClick={onMenuClick}
           >
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-foreground/20 rounded-full flex items-center justify-center">
+            <div className="w-9 h-9 bg-primary-foreground/20 rounded-full flex items-center justify-center">
               <span className="text-sm font-bold">FF</span>
             </div>
             <div>
               <h1 className="text-lg font-bold leading-tight">{title}</h1>
-              <p className="text-xs text-primary-foreground/70">Sulawesi Selatan</p>
+              <p className="text-[10px] text-primary-foreground/70">Sulawesi Selatan</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="relative text-primary-foreground hover:bg-primary-foreground/10"
+            className="relative text-primary-foreground hover:bg-primary-foreground/10 min-h-[44px] min-w-[44px]"
           >
             <Bell className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground text-xs">
+            <Badge className="absolute -top-0.5 -right-0.5 h-5 w-5 p-0 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px]">
               3
             </Badge>
           </Button>
@@ -65,7 +65,7 @@ export const Header = ({ title = "FFSS", onMenuClick }: HeaderProps) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-primary-foreground hover:bg-primary-foreground/10"
+                className="text-primary-foreground hover:bg-primary-foreground/10 min-h-[44px] min-w-[44px]"
               >
                 <User className="h-5 w-5" />
               </Button>

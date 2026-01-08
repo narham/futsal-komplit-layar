@@ -137,4 +137,20 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  }
+
+  .icon-circle {
+    @apply w-12 h-12 rounded-full flex items-center justify-center;
+  }
+
+  .icon-circle-sm {
+    @apply w-10 h-10 rounded-full flex items-center justify-center;
+  }
+
+  .card-elevated {
+    @apply bg-card border border-border shadow-md rounded-xl;
+  }
 }
