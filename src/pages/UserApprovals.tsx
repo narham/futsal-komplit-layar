@@ -249,34 +249,60 @@ export default function UserApprovals() {
                     filteredPendingUsers.map((user) => (
                       <Card
                         key={user.id}
-                        className={`cursor-pointer transition-all hover:shadow-md ${
+                        className={`border-l-4 border-l-primary transition-all hover:shadow-md ${
                           selectedUser?.id === user.id
-                            ? "ring-2 ring-primary border-primary"
-                            : "hover:border-primary/50"
+                            ? "ring-2 ring-primary"
+                            : ""
                         }`}
                         onClick={() => setSelectedUser(user)}
                       >
                         <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold truncate">{user.full_name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Ingin menjadi <span className="font-medium">{getRoleLabel(user.requested_role)}</span>
-                              </p>
-                            </div>
+                          <div className="mb-2">
+                            <h3 className="font-semibold text-base truncate">{user.full_name}</h3>
+                            <p className="text-sm text-primary">
+                              Ingin menjadi <span className="font-medium">{getRoleLabel(user.requested_role)}</span>
+                            </p>
                           </div>
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <span className="flex items-center gap-1 text-muted-foreground">
+                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-3">
+                            <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {user.kabupaten_kota_name || "-"}
                             </span>
-                            <span className="flex items-center gap-1 text-muted-foreground">
+                            <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {formatDate(user.created_at)}
                             </span>
                           </div>
-                          <div className="mt-3">
+                          <div className="mb-4">
                             <StatusBadge status="warning">Menunggu Review</StatusBadge>
+                          </div>
+                          {/* Inline Action Buttons */}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedUser(user);
+                                setShowRejectDialog(true);
+                              }}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Tolak
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedUser(user);
+                                setShowApproveDialog(true);
+                              }}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Setujui
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -394,26 +420,6 @@ export default function UserApprovals() {
                 </div>
               </ScrollArea>
 
-              {/* Action Buttons */}
-              <div className="border-t border-border p-4 bg-background">
-                <div className="flex gap-3 max-w-3xl">
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={() => setShowRejectDialog(true)}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Tolak
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => setShowApproveDialog(true)}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Setujui
-                  </Button>
-                </div>
-              </div>
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
