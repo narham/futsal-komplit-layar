@@ -42,6 +42,7 @@ export function useUsers() {
             name
           )
         `)
+        .or('registration_status.eq.approved,registration_status.is.null')
         .order("created_at", { ascending: false });
 
       if (profilesError) throw profilesError;
