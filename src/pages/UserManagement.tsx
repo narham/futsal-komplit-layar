@@ -481,7 +481,9 @@ export default function UserManagement() {
                               {ROLE_LABELS[user.role]}
                             </Badge>
                           ) : (
-                            <Badge variant="outline">Belum Assign</Badge>
+                            <Badge variant="outline" className="text-muted-foreground">
+                              Pending Setup
+                            </Badge>
                           )}
                         </TableCell>
                         <TableCell>
