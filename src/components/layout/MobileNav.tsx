@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Calendar, Users, ClipboardCheck, MoreHorizontal, Building2, UserCog, UserCheck, Database } from "lucide-react";
+import { Home, Calendar, Users, ClipboardCheck, MoreHorizontal, Building2, UserCog, UserCheck, Database, BookOpen, MessageSquare } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +31,8 @@ export const MobileNav = () => {
     ...(isAdminProvinsi() ? [
       { icon: Building2, label: "Organisasi", path: "/organization" },
       { icon: UserCog, label: "Manajemen User", path: "/users" },
+      { icon: BookOpen, label: "Kelola Materi", path: "/admin/learning" },
+      { icon: MessageSquare, label: "Moderasi Diskusi", path: "/admin/discussions" },
       { icon: Database, label: "Export Database", path: "/database-export" },
     ] : []),
     ...(isAdmin() ? [
