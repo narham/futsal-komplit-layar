@@ -93,15 +93,27 @@ export function useApproveRegistration() {
 
       if (profileError) throw profileError;
 
-      // 3. Assign role with upsert to handle duplicate
-      const { error: roleError } = await supabase
+      // 3. Assign role - check if exists first, then insert or update
+      const { data: existingRole } = await supabase
         .from("user_roles")
-        .upsert(
-          { user_id: userId, role: role },
-          { onConflict: "user_id" }
-        );
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (roleError) throw roleError;
+      if (existingRole) {
+        // Update existing role
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .update({ role })
+          .eq("user_id", userId);
+        if (roleError) throw roleError;
+      } else {
+        // Insert new role
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role });
+        if (roleError) throw roleError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pending-registrations"] });
