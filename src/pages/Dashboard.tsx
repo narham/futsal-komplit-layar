@@ -1,7 +1,6 @@
 import { 
   Calendar, 
   Users, 
-  Clock, 
   CheckCircle, 
   XCircle, 
   ArrowRight, 
@@ -10,19 +9,23 @@ import {
   UserPlus,
   CalendarPlus,
   FileCheck,
-  AlertCircle,
   Loader2,
   Database,
-  BarChart3
+  BarChart3,
+  ClipboardCheck,
+  Settings,
+  BookOpen,
+  MessageSquare,
+  UserCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { QuickActionGrid, QuickActionItem } from "@/components/ui/quick-action-grid";
 import { useDashboardSummary, formatCurrency } from "@/hooks/useReports";
-import { useAuditLogs, getActionLabel, getActionVariant } from "@/hooks/useAuditLogs";
+import { useAuditLogs, getActionLabel } from "@/hooks/useAuditLogs";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -36,71 +39,95 @@ export default function Dashboard() {
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary(filters);
   const { data: auditLogs, isLoading: logsLoading } = useAuditLogs({ limit: 5 });
 
-  const stats = [
-    { 
-      title: "Total Event", 
-      value: summary?.total_events || 0, 
-      icon: Calendar,
-      trend: summary?.completed_events ? { 
-        value: Math.round((summary.completed_events / (summary.total_events || 1)) * 100), 
-        isPositive: true 
-      } : undefined
-    },
-    { 
-      title: "Total Wasit Terdaftar", 
-      value: summary?.total_referees || 0, 
-      icon: Users,
-      trend: summary?.active_referees ? { 
-        value: Math.round((summary.active_referees / (summary.total_referees || 1)) * 100), 
-        isPositive: true 
-      } : undefined
-    },
-    { 
-      title: "Event Selesai", 
-      value: summary?.completed_events || 0, 
-      icon: CheckCircle
-    },
-  ];
+  const roleLabel = role === "admin_provinsi" ? "Admin Provinsi" : 
+                   role === "admin_kab_kota" ? "Admin Kab/Kota" : "Admin";
 
-  const quickActions = [
+  // Quick Actions for all admins
+  const baseQuickActions: QuickActionItem[] = [
     { 
-      title: "Persetujuan Event", 
-      description: "Review pengajuan event", 
-      icon: FileCheck, 
-      path: "/approvals",
-      color: "bg-warning/10 text-warning"
+      icon: Calendar, 
+      label: "Event", 
+      path: "/events",
+      iconBgClass: "bg-primary/10",
+      iconColorClass: "text-primary"
     },
     { 
-      title: "Monitoring Wasit", 
-      description: "Pantau aktivitas wasit", 
       icon: Users, 
+      label: "Wasit", 
       path: "/referees",
-      color: "bg-info/10 text-info"
+      iconBgClass: "bg-info/10",
+      iconColorClass: "text-info"
     },
     { 
-      title: "Struktur Organisasi", 
-      description: "Kelola pengurus", 
-      icon: Building2, 
-      path: "/organization",
-      color: "bg-primary/10 text-primary"
+      icon: FileCheck, 
+      label: "Persetujuan", 
+      path: "/approvals",
+      iconBgClass: "bg-warning/10",
+      iconColorClass: "text-warning"
+    },
+    { 
+      icon: ClipboardCheck, 
+      label: "Evaluasi", 
+      path: "/evaluations",
+      iconBgClass: "bg-success/10",
+      iconColorClass: "text-success"
     },
   ];
 
-  // Additional actions for admin_provinsi only
-  const adminProvinsiActions = isAdminProvinsi() ? [
+  // Second row of quick actions
+  const secondRowActions: QuickActionItem[] = [
     { 
-      title: "Analytics", 
-      description: "Statistik & grafik", 
-      icon: BarChart3, 
-      path: "/analytics",
-      color: "bg-purple-100 text-purple-600"
+      icon: Building2, 
+      label: "Organisasi", 
+      path: "/organization",
+      iconBgClass: "bg-primary/10",
+      iconColorClass: "text-primary"
     },
     { 
-      title: "Export Database", 
-      description: "Backup data sistem", 
+      icon: BookOpen, 
+      label: "Materi", 
+      path: "/admin/learning",
+      iconBgClass: "bg-accent/10",
+      iconColorClass: "text-accent"
+    },
+    { 
+      icon: MessageSquare, 
+      label: "Diskusi", 
+      path: "/admin/discussions",
+      iconBgClass: "bg-info/10",
+      iconColorClass: "text-info"
+    },
+    { 
+      icon: Settings, 
+      label: "Pengaturan", 
+      path: "/settings",
+      iconBgClass: "bg-muted",
+      iconColorClass: "text-muted-foreground"
+    },
+  ];
+
+  // Admin provinsi exclusive actions
+  const adminProvinsiActions: QuickActionItem[] = isAdminProvinsi() ? [
+    { 
+      icon: BarChart3, 
+      label: "Analytics", 
+      path: "/analytics",
+      iconBgClass: "bg-purple-100 dark:bg-purple-900/30",
+      iconColorClass: "text-purple-600 dark:text-purple-400"
+    },
+    { 
+      icon: UserCheck, 
+      label: "Persetujuan User", 
+      path: "/user-approvals",
+      iconBgClass: "bg-warning/10",
+      iconColorClass: "text-warning"
+    },
+    { 
       icon: Database, 
+      label: "Export DB", 
       path: "/export",
-      color: "bg-accent/10 text-accent"
+      iconBgClass: "bg-accent/10",
+      iconColorClass: "text-accent"
     },
   ] : [];
 
@@ -119,88 +146,72 @@ export default function Dashboard() {
     return "info";
   };
 
-  const roleLabel = role === "admin_provinsi" ? "Admin Provinsi" : 
-                   role === "admin_kab_kota" ? "Admin Kab/Kota" : "Admin";
-
   return (
     <AppLayout title="FFSS">
-      <div className="p-4 space-y-6 animate-fade-in">
-        {/* Admin Header */}
-        <div className="bg-gradient-to-r from-primary to-accent rounded-xl p-5 text-primary-foreground">
-          <div className="flex items-center gap-2 mb-2">
-            <StatusBadge status="primary" className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
-              {roleLabel}
-            </StatusBadge>
-          </div>
+      <div className="p-4 space-y-5 animate-fade-in pb-24">
+        {/* Header Card */}
+        <div className="gradient-primary rounded-2xl p-5 text-primary-foreground shadow-lg">
+          <StatusBadge status="primary" className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 mb-2">
+            {roleLabel}
+          </StatusBadge>
           <h2 className="text-xl font-bold mb-1">Selamat Datang, Admin!</h2>
           <p className="text-sm text-primary-foreground/80">
-            Kelola dan pantau seluruh aktivitas futsal di Sulawesi Selatan.
+            Kelola aktivitas futsal Sulawesi Selatan.
           </p>
         </div>
 
-        {/* Stats Summary */}
-        <section>
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-            Ringkasan
-          </h3>
-          {summaryLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {stats.map((stat) => (
-                <StatCard key={stat.title} {...stat} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Income Summary */}
-        {summary && (summary.total_verified_income > 0 || summary.total_pending_income > 0) && (
-          <section>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-              Ringkasan Honor
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Card className="bg-success/5 border-success/20">
-                <CardContent className="p-4">
-                  <p className="text-sm text-muted-foreground">Total Honor Terverifikasi</p>
-                  <p className="text-2xl font-bold text-success">{formatCurrency(summary.total_verified_income)}</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-warning/5 border-warning/20">
-                <CardContent className="p-4">
-                  <p className="text-sm text-muted-foreground">Total Honor Pending</p>
-                  <p className="text-2xl font-bold text-warning">{formatCurrency(summary.total_pending_income)}</p>
-                </CardContent>
-              </Card>
-            </div>
-          </section>
+        {/* Summary Stats */}
+        {summaryLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <Card className="shadow-md">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-3 divide-x divide-border">
+                <div className="text-center px-2">
+                  <p className="text-2xl font-bold text-primary">{summary?.total_events || 0}</p>
+                  <p className="text-[11px] text-muted-foreground">Total Event</p>
+                </div>
+                <div className="text-center px-2">
+                  <p className="text-2xl font-bold text-primary">{summary?.total_referees || 0}</p>
+                  <p className="text-[11px] text-muted-foreground">Total Wasit</p>
+                </div>
+                <div className="text-center px-2">
+                  <p className="text-2xl font-bold text-success">{summary?.completed_events || 0}</p>
+                  <p className="text-[11px] text-muted-foreground">Selesai</p>
+                </div>
+              </div>
+              {(summary?.total_verified_income || summary?.total_pending_income) ? (
+                <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Honor Verified</p>
+                    <p className="text-lg font-bold text-success">{formatCurrency(summary?.total_verified_income || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Honor Pending</p>
+                    <p className="text-lg font-bold text-warning">{formatCurrency(summary?.total_pending_income || 0)}</p>
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
         )}
 
         {/* Quick Actions */}
         <section>
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
             Akses Cepat
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[...quickActions, ...adminProvinsiActions].map((action) => (
-              <Link key={action.title} to={action.path}>
-                <Card className="hover:shadow-md transition-all hover:border-primary/30 h-full">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className={`p-3 rounded-xl ${action.color}`}>
-                        <action.icon className="h-6 w-6" />
-                      </div>
-                    </div>
-                    <h4 className="font-semibold mt-3 mb-1">{action.title}</h4>
-                    <p className="text-sm text-muted-foreground">{action.description}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+          <QuickActionGrid items={baseQuickActions} columns={4} />
+          <div className="mt-3">
+            <QuickActionGrid items={secondRowActions} columns={4} />
           </div>
+          {adminProvinsiActions.length > 0 && (
+            <div className="mt-3">
+              <QuickActionGrid items={adminProvinsiActions} columns={3} />
+            </div>
+          )}
         </section>
 
         {/* Recent Activity */}
@@ -209,14 +220,14 @@ export default function Dashboard() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Aktivitas Terbaru</CardTitle>
-                <Button variant="ghost" size="sm" className="text-primary" asChild>
+                <Button variant="ghost" size="sm" className="text-primary h-8" asChild>
                   <Link to="/audit-logs">
                     Lihat Semua <ArrowRight className="ml-1 h-4 w-4" />
                   </Link>
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-1">
+            <CardContent className="space-y-1 pt-0">
               {logsLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -232,7 +243,7 @@ export default function Dashboard() {
                         index !== auditLogs.length - 1 ? "border-b border-border" : ""
                       }`}
                     >
-                      <div className={`p-2 rounded-lg ${
+                      <div className={`icon-circle-sm flex-shrink-0 ${
                         status === "success" ? "bg-success/10" :
                         status === "warning" ? "bg-warning/10" :
                         status === "error" ? "bg-destructive/10" :
@@ -275,46 +286,6 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-        </section>
-
-        {/* Quick Stats - Desktop Only */}
-        <section className="hidden md:block">
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Wasit Aktif</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-3xl font-bold text-primary">{summary?.active_referees || 0}</p>
-                    <p className="text-sm text-muted-foreground">dari {summary?.total_referees || 0} total</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-semibold text-success">
-                      {summary?.total_referees ? Math.round((summary.active_referees / summary.total_referees) * 100) : 0}%
-                    </p>
-                    <p className="text-xs text-muted-foreground">aktif</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Rata-rata Honor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-primary">
-                      {formatCurrency(summary?.avg_income_per_referee || 0)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">per wasit</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </section>
       </div>
     </AppLayout>

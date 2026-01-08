@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { QuickActionGrid, QuickActionItem } from "@/components/ui/quick-action-grid";
 import {
   CalendarDays,
   Trophy,
@@ -16,6 +17,9 @@ import {
   Bell,
   Loader2,
   AlertCircle,
+  BookOpen,
+  MessageSquare,
+  User,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -74,6 +78,40 @@ export default function RefereeDashboard() {
   
   const pendingAmount = pendingHonors.reduce((sum, h) => sum + h.amount, 0);
 
+  // Quick action items
+  const quickActions: QuickActionItem[] = [
+    { 
+      icon: CalendarDays, 
+      label: "Event Saya", 
+      path: "/referee/events",
+      iconBgClass: "bg-primary/10",
+      iconColorClass: "text-primary",
+      badge: pendingAssignments?.length || undefined
+    },
+    { 
+      icon: BookOpen, 
+      label: "Belajar", 
+      path: "/referee/learning",
+      iconBgClass: "bg-info/10",
+      iconColorClass: "text-info"
+    },
+    { 
+      icon: MessageSquare, 
+      label: "Diskusi", 
+      path: "/referee/discussions",
+      iconBgClass: "bg-accent/10",
+      iconColorClass: "text-accent"
+    },
+    { 
+      icon: DollarSign, 
+      label: "Honor", 
+      path: "/referee/honor",
+      iconBgClass: "bg-success/10",
+      iconColorClass: "text-success",
+      badge: pendingHonors.length > 0 ? pendingHonors.length : undefined
+    },
+  ];
+
   if (profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -85,18 +123,21 @@ export default function RefereeDashboard() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="bg-primary text-primary-foreground p-4 pb-12">
+      <header className="gradient-primary text-primary-foreground p-4 pb-16 rounded-b-3xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12 border-2 border-primary-foreground/30">
+            <Avatar className="h-14 w-14 border-2 border-primary-foreground/30 shadow-lg">
               <AvatarImage src={profile?.profile_photo_url || ""} />
-              <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground font-bold">
-                {profile?.full_name?.split(" ").map((n) => n[0]).join("") || "?"}
+              <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground font-bold text-lg">
+                {profile?.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2) || "?"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm opacity-80">Selamat datang,</p>
+              <p className="text-xs opacity-80">Selamat datang,</p>
               <h1 className="font-bold text-lg">{profile?.full_name || "Wasit"}</h1>
+              <StatusBadge status="primary" className="mt-1 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 text-[10px]">
+                {getLicenseLabel(profile?.license_level || null)}
+              </StatusBadge>
             </div>
           </div>
           <Button
@@ -107,53 +148,52 @@ export default function RefereeDashboard() {
             <Bell className="h-5 w-5" />
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <StatusBadge status="primary">{getLicenseLabel(profile?.license_level || null)}</StatusBadge>
-        </div>
       </header>
 
       {/* Main Content */}
-      <main className="px-4 -mt-8 space-y-4">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="shadow-md">
-            <CardContent className="p-3 text-center">
-              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Trophy className="h-4 w-4 text-primary" />
+      <main className="px-4 -mt-10 space-y-4">
+        {/* Summary Stats Card */}
+        <Card className="shadow-lg">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-3 divide-x divide-border">
+              <div className="text-center px-2">
+                <div className="icon-circle-sm bg-primary/10 mx-auto mb-2">
+                  <Trophy className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-xl font-bold">{honors?.length || 0}</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Event</p>
               </div>
-              <p className="text-2xl font-bold">{honors?.length || 0}</p>
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                Event Ditangani
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardContent className="p-3 text-center">
-              <div className="w-8 h-8 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                <DollarSign className="h-4 w-4 text-success" />
+              <div className="text-center px-2">
+                <div className="icon-circle-sm bg-success/10 mx-auto mb-2">
+                  <DollarSign className="h-4 w-4 text-success" />
+                </div>
+                <p className="text-lg font-bold">
+                  {honorStats?.total_earned 
+                    ? (honorStats.total_earned / 1000000).toFixed(1) + "jt" 
+                    : "0"}
+                </p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Total Honor</p>
               </div>
-              <p className="text-lg font-bold">
-                {honorStats?.total_earned ? formatCurrency(honorStats.total_earned).replace("Rp", "").trim() : "0"}
-              </p>
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                Total Honor
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-md">
-            <CardContent className="p-3 text-center">
-              <div className="w-8 h-8 bg-info/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                <CheckCircle2 className="h-4 w-4 text-info" />
+              <div className="text-center px-2">
+                <div className="icon-circle-sm bg-info/10 mx-auto mb-2">
+                  <CheckCircle2 className="h-4 w-4 text-info" />
+                </div>
+                <p className="text-lg font-bold text-success">
+                  {completedHonors.length > 0 ? "✓" : "-"}
+                </p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Verified</p>
               </div>
-              <p className="text-lg font-bold text-success">
-                {completedHonors.length > 0 ? "Verified" : "-"}
-              </p>
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                Status Terakhir
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <section>
+          <h3 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+            Akses Cepat
+          </h3>
+          <QuickActionGrid items={quickActions} columns={4} />
+        </section>
 
         {/* Pending Assignment Alert */}
         {pendingAssignments && pendingAssignments.length > 0 && (
@@ -178,7 +218,7 @@ export default function RefereeDashboard() {
                   Event Mendatang
                 </CardTitle>
                 <Link to="/referee/events">
-                  <Button variant="ghost" size="sm" className="text-xs min-h-[36px]">
+                  <Button variant="ghost" size="sm" className="text-xs min-h-[36px] h-8">
                     Lihat Semua
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
@@ -189,10 +229,10 @@ export default function RefereeDashboard() {
               {upcomingEvents.slice(0, 2).map((assignment) => (
                 <div 
                   key={assignment.id} 
-                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl"
                 >
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Trophy className="h-5 w-5 text-primary" />
+                  <div className="icon-circle-sm bg-primary/10 flex-shrink-0">
+                    <Trophy className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">
@@ -223,7 +263,7 @@ export default function RefereeDashboard() {
             <Card className="bg-warning/10 border-warning/30 active:bg-warning/15 transition-colors">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-warning/20 rounded-full flex items-center justify-center">
+                  <div className="icon-circle-sm bg-warning/20">
                     <Clock className="h-5 w-5 text-warning" />
                   </div>
                   <div>
@@ -239,7 +279,7 @@ export default function RefereeDashboard() {
           </Link>
         )}
 
-        {/* Event List */}
+        {/* Honor History */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Riwayat Honor</CardTitle>
