@@ -7,12 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Association email for submission notifications (from environment variable)
-const ASSOCIATION_EMAIL = Deno.env.get("ASSOCIATION_EMAIL") || "sulsel.afp@gmail.com";
-
-// Sender email - must be verified domain in Resend or use onboarding@resend.dev for testing
-const SENDER_EMAIL = Deno.env.get("SENDER_EMAIL") || "FFI Sulsel <onboarding@resend.dev>";
-
 interface EventNotificationRequest {
   eventId: string;
   type: "submission" | "approval";
@@ -37,11 +31,38 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const resend = new Resend(resendApiKey);
-    console.log("Resend configured, sender:", SENDER_EMAIL);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch email settings from system_settings table
+    const { data: settings, error: settingsError } = await supabase
+      .from("system_settings")
+      .select("key, value")
+      .in("key", ["association_email", "sender_email_name", "sender_email_address"]);
+
+    if (settingsError) {
+      console.error("Failed to fetch settings:", settingsError);
+    }
+
+    // Parse settings to map
+    const settingsMap = settings?.reduce((acc, s) => {
+      acc[s.key] = s.value;
+      return acc;
+    }, {} as Record<string, string>) || {};
+
+    // Use settings from DB with fallbacks
+    const associationEmail = settingsMap.association_email || "sulsel.afp@gmail.com";
+    const senderName = settingsMap.sender_email_name || "AFP Sulsel";
+    const senderAddress = settingsMap.sender_email_address || "onboarding@resend.dev";
+    const senderEmail = `${senderName} <${senderAddress}>`;
+
+    console.log("Email settings loaded:", {
+      associationEmail,
+      senderEmail,
+      source: settings?.length ? "database" : "fallback"
+    });
 
     const { eventId, type = "submission", approvalNotes }: EventNotificationRequest = await req.json();
     console.log("Processing event notification:", { eventId, type });
@@ -82,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (type === "submission") {
       // SUBMISSION: Send to association email with document attachment
-      recipientEmail = ASSOCIATION_EMAIL;
+      recipientEmail = associationEmail;
       emailSubject = `[Pengajuan Event] ${event.name}`;
 
       // Download document if exists
@@ -170,8 +191,8 @@ const handler = async (req: Request): Promise<Response> => {
               ` : ""}
             </div>
             <div class="footer">
-              <p>Email ini dikirim otomatis dari Sistem Manajemen Wasit FFI Sulsel</p>
-              <p>© ${new Date().getFullYear()} Federasi Futsal Indonesia - Sulawesi Selatan</p>
+              <p>Email ini dikirim otomatis dari Sistem Manajemen Wasit AFP Sulsel</p>
+              <p>© ${new Date().getFullYear()} Asosiasi Futsal Provinsi - Sulawesi Selatan</p>
             </div>
           </div>
         </body>
@@ -268,8 +289,8 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="margin-top: 20px;">Silakan login ke aplikasi untuk melihat detail lengkap dan mengelola event Anda.</p>
             </div>
             <div class="footer">
-              <p>Email ini dikirim otomatis dari Sistem Manajemen Wasit FFI Sulsel</p>
-              <p>© ${new Date().getFullYear()} Federasi Futsal Indonesia - Sulawesi Selatan</p>
+              <p>Email ini dikirim otomatis dari Sistem Manajemen Wasit AFP Sulsel</p>
+              <p>© ${new Date().getFullYear()} Asosiasi Futsal Provinsi - Sulawesi Selatan</p>
             </div>
           </div>
         </body>
@@ -281,7 +302,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email using Resend
     const emailPayload: any = {
-      from: SENDER_EMAIL,
+      from: senderEmail,
       to: [recipientEmail],
       subject: emailSubject,
       html: emailHtml,
