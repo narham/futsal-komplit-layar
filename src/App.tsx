@@ -40,6 +40,8 @@ import AuditLogs from "./pages/AuditLogs";
 import DatabaseExport from "./pages/DatabaseExport";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
+import AdminLearningMaterials from "./pages/AdminLearningMaterials";
+import AdminDiscussions from "./pages/AdminDiscussions";
 
 // Referee pages
 import RefereeDashboard from "./pages/RefereeDashboard";
@@ -265,6 +267,22 @@ const App = () => (
               element={
                 <ProtectedRoute requireRole="admin_provinsi" requireProfileComplete>
                   <Settings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/learning" 
+              element={
+                <ProtectedRoute requireRole="admin_provinsi" requireProfileComplete>
+                  <AdminLearningMaterials />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/discussions" 
+              element={
+                <ProtectedRoute requireRole="admin_provinsi" requireProfileComplete>
+                  <AdminDiscussions />
                 </ProtectedRoute>
               } 
             />
