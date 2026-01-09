@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface PendingRegistration {
   id: string;
   full_name: string;
+  email: string | null;
   kabupaten_kota_id: string | null;
   kabupaten_kota_name: string | null;
   requested_role: string | null;
@@ -15,6 +16,7 @@ interface PendingRegistration {
 interface RegistrationHistory {
   id: string;
   full_name: string;
+  email: string | null;
   kabupaten_kota_id: string | null;
   kabupaten_kota_name: string | null;
   requested_role: string | null;

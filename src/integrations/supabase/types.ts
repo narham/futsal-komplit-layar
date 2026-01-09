@@ -1526,6 +1526,7 @@ export type Database = {
         Args: never
         Returns: {
           created_at: string
+          email: string
           full_name: string
           id: string
           kabupaten_kota_id: string
@@ -1598,6 +1599,7 @@ export type Database = {
           approved_by: string
           approver_name: string
           created_at: string
+          email: string
           full_name: string
           id: string
           kabupaten_kota_id: string
