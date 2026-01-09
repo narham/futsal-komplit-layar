@@ -48,7 +48,8 @@ import {
   useUpdateUserRole, 
   useUpdateUserKabupatenKota,
   useDeleteUser,
-  useResetUserPassword 
+  useResetUserPassword,
+  useUpdateUserEmail
 } from "@/hooks/useUsers";
 import type { AppRole } from "@/contexts/AuthContext";
 import { 
@@ -93,6 +94,7 @@ export default function UserManagement() {
   const updateKabupatenKota = useUpdateUserKabupatenKota();
   const deleteUser = useDeleteUser();
   const resetPassword = useResetUserPassword();
+  const updateEmail = useUpdateUserEmail();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -112,6 +114,7 @@ export default function UserManagement() {
   const [formError, setFormError] = useState<string | null>(null);
 
   // Edit form states
+  const [editEmail, setEditEmail] = useState("");
   const [editRole, setEditRole] = useState<AppRole | "">("");
   const [editKabupatenKotaId, setEditKabupatenKotaId] = useState("");
 
@@ -182,6 +185,7 @@ export default function UserManagement() {
 
   const handleEditUser = (user: typeof users extends (infer T)[] ? T : never) => {
     setSelectedUser(user);
+    setEditEmail(user.email || "");
     setEditRole(user.role || "");
     setEditKabupatenKotaId(user.kabupaten_kota_id || "");
     setIsEditDialogOpen(true);
@@ -191,6 +195,14 @@ export default function UserManagement() {
     if (!selectedUser) return;
 
     try {
+      // Update email if changed
+      if (editEmail && editEmail !== selectedUser.email) {
+        await updateEmail.mutateAsync({
+          userId: selectedUser.id,
+          newEmail: editEmail,
+        });
+      }
+
       // Update role if changed
       if (editRole && editRole !== selectedUser.role) {
         await updateRole.mutateAsync({
@@ -466,13 +478,16 @@ export default function UserManagement() {
                     {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8">
                               <AvatarFallback className="text-xs">
                                 {user.full_name?.slice(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="font-medium">{user.full_name}</span>
+                            <div>
+                              <div className="font-medium">{user.full_name}</div>
+                              <div className="text-sm text-muted-foreground">{user.email}</div>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -537,10 +552,19 @@ export default function UserManagement() {
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>
-                Ubah role atau kabupaten/kota untuk {selectedUser?.full_name}
+                Ubah email, role atau kabupaten/kota untuk {selectedUser?.full_name}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="email@example.com"
+                />
+              </div>
               <div className="space-y-2">
                 <Label>Role</Label>
                 <Select value={editRole} onValueChange={(v) => setEditRole(v as AppRole)}>
@@ -577,9 +601,9 @@ export default function UserManagement() {
             <DialogFooter>
               <Button
                 onClick={handleSaveEdit}
-                disabled={updateRole.isPending || updateKabupatenKota.isPending}
+                disabled={updateRole.isPending || updateKabupatenKota.isPending || updateEmail.isPending}
               >
-                {(updateRole.isPending || updateKabupatenKota.isPending) && (
+                {(updateRole.isPending || updateKabupatenKota.isPending || updateEmail.isPending) && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
                 Simpan
