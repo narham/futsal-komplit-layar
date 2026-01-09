@@ -34,6 +34,7 @@ export function useUsers() {
         .select(`
           id,
           full_name,
+          email,
           kabupaten_kota_id,
           is_profile_complete,
           created_at,
@@ -220,6 +221,37 @@ export function useResetUserPassword() {
       }
 
       return response.data;
+    },
+  });
+}
+
+export function useUpdateUserEmail() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, newEmail }: { userId: string; newEmail: string }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await supabase.functions.invoke("update-user-email", {
+        body: { user_id: userId, new_email: newEmail },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || "Gagal update email");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 }
