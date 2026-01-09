@@ -10,13 +10,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, CalendarIcon, MapPin, Loader2, Save } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useEvent, useUpdateEvent } from "@/hooks/useEvents";
 import { useKabupatenKotaList } from "@/hooks/useOrganization";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
+
+// Disable dates before today
+const today = startOfDay(new Date());
 
 const EventEdit = () => {
   const navigate = useNavigate();
@@ -200,6 +203,7 @@ const EventEdit = () => {
                       mode="single"
                       selected={eventDate}
                       onSelect={setEventDate}
+                      disabled={(date) => date < today}
                       initialFocus
                       className="pointer-events-auto"
                     />
