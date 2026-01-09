@@ -478,6 +478,40 @@ export function useRestoreEvent() {
   });
 }
 
+// Check for duplicate events (same name and date)
+export function useCheckDuplicateEvent() {
+  return useMutation({
+    mutationFn: async ({ 
+      name, 
+      date, 
+      excludeEventId 
+    }: { 
+      name: string; 
+      date: string; 
+      excludeEventId?: string 
+    }) => {
+      let query = supabase
+        .from("events")
+        .select("id, name, date")
+        .eq("name", name.trim())
+        .eq("date", date)
+        .is("deleted_at", null);
+
+      if (excludeEventId) {
+        query = query.neq("id", excludeEventId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return {
+        isDuplicate: data && data.length > 0,
+        existingEvent: data?.[0] || null,
+      };
+    },
+  });
+}
+
 // Helper function to get status display
 export function getEventStatusDisplay(status: EventStatus) {
   switch (status) {
