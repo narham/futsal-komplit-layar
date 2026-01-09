@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 const statusTabs = [
   { value: "all", label: "Semua" },
   { value: "DIAJUKAN", label: "Diajukan" },
+  { value: "DISETUJUI", label: "Disetujui" },
   { value: "DITOLAK", label: "Ditolak" },
   { value: "SELESAI", label: "Selesai" },
 ];
@@ -37,9 +38,6 @@ export default function Events() {
 
   const filteredEvents = useMemo(() => {
     return events?.filter((event) => {
-      // Sembunyikan event yang sudah disetujui dari daftar pengaju
-      if (event.status === "DISETUJUI") return false;
-      
       const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTab = activeTab === "all" || event.status === activeTab;
       const matchesKabKota = !filters.kabupatenKotaId || event.kabupaten_kota_id === filters.kabupatenKotaId;
