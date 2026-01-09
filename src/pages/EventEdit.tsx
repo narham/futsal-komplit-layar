@@ -9,14 +9,19 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, CalendarIcon, MapPin, Loader2, Save } from "lucide-react";
+import { DocumentUpload } from "@/components/ui/document-upload";
+import { ArrowLeft, CalendarIcon, MapPin, Loader2, Save, FileText, AlertTriangle } from "lucide-react";
 import { format, parseISO, startOfDay } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { useEvent, useUpdateEvent } from "@/hooks/useEvents";
+import { useEvent, useUpdateEvent, useCheckDuplicateEvent } from "@/hooks/useEvents";
 import { useKabupatenKotaList } from "@/hooks/useOrganization";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSignedUrl } from "@/hooks/useSignedUrl";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Disable dates before today
 const today = startOfDay(new Date());
@@ -27,6 +32,7 @@ const EventEdit = () => {
   const { user, isAdminProvinsi } = useAuth();
   const { data: event, isLoading } = useEvent(eventId || "");
   const updateEvent = useUpdateEvent();
+  const checkDuplicate = useCheckDuplicateEvent();
   const { data: kabupatenKotaList } = useKabupatenKotaList();
   
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -38,6 +44,16 @@ const EventEdit = () => {
     kabupatenKotaId: "",
   });
   const [eventDate, setEventDate] = useState<Date | undefined>();
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentPreview, setDocumentPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
+  // Get signed URL for existing document
+  const { data: existingDocumentUrl } = useSignedUrl(
+    event?.document_path || null,
+    "documents"
+  );
 
   // Load event data when available
   useEffect(() => {
@@ -52,19 +68,92 @@ const EventEdit = () => {
       if (event.date) {
         setEventDate(parseISO(event.date));
       }
+      // Set existing document preview
+      if (event.document_path && existingDocumentUrl) {
+        setDocumentPreview(existingDocumentUrl);
+      }
     }
-  }, [event]);
+  }, [event, existingDocumentUrl]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear duplicate warning when name changes
+    if (field === "eventName") {
+      setDuplicateWarning(null);
+    }
+  };
+
+  const handleDocumentChange = (preview: string | null, file: File | null) => {
+    setDocumentPreview(preview);
+    setDocumentFile(file);
   };
 
   const isFormValid = formData.eventName.trim() !== "" && eventDate && formData.location.trim() !== "";
+
+  const handleCheckDuplicate = async () => {
+    if (!eventDate || !formData.eventName.trim()) return true;
+
+    try {
+      const result = await checkDuplicate.mutateAsync({
+        name: formData.eventName,
+        date: format(eventDate, "yyyy-MM-dd"),
+        excludeEventId: eventId,
+      });
+
+      if (result.isDuplicate) {
+        setDuplicateWarning(
+          `Event dengan nama "${result.existingEvent?.name}" sudah ada pada tanggal yang sama`
+        );
+        return false;
+      }
+
+      setDuplicateWarning(null);
+      return true;
+    } catch {
+      return true; // Allow proceeding if check fails
+    }
+  };
+
+  const handleOpenConfirmation = async () => {
+    const isValid = await handleCheckDuplicate();
+    if (isValid) {
+      setShowConfirmation(true);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!eventDate || !user || !eventId) return;
 
     try {
+      setIsUploading(true);
+      let documentPath = event?.document_path;
+
+      // Upload new document if exists
+      if (documentFile) {
+        const fileExt = documentFile.name.split(".").pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("documents")
+          .upload(fileName, documentFile);
+
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          toast.error("Gagal mengupload dokumen: " + uploadError.message);
+          setIsUploading(false);
+          return;
+        }
+
+        // Delete old document if exists
+        if (event?.document_path) {
+          await supabase.storage
+            .from("documents")
+            .remove([event.document_path]);
+        }
+
+        documentPath = fileName;
+      }
+
       await updateEvent.mutateAsync({
         id: eventId,
         name: formData.eventName,
@@ -73,12 +162,15 @@ const EventEdit = () => {
         description: formData.description || null,
         category: formData.category || null,
         kabupaten_kota_id: formData.kabupatenKotaId || null,
+        document_path: documentPath,
       });
       
       setShowConfirmation(false);
       navigate(`/events/${eventId}`);
     } catch (error) {
       // Error handled by mutation
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -134,6 +226,14 @@ const EventEdit = () => {
         </div>
 
         <main className="p-4 pb-24 max-w-lg mx-auto space-y-4">
+          {/* Duplicate Warning */}
+          {duplicateWarning && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{duplicateWarning}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Event Name */}
           <Card>
             <CardHeader>
@@ -202,7 +302,10 @@ const EventEdit = () => {
                     <Calendar
                       mode="single"
                       selected={eventDate}
-                      onSelect={setEventDate}
+                      onSelect={(date) => {
+                        setEventDate(date);
+                        setDuplicateWarning(null);
+                      }}
                       disabled={(date) => date < today}
                       initialFocus
                       className="pointer-events-auto"
@@ -262,6 +365,33 @@ const EventEdit = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Document Upload */}
+          <Card>
+            <CardHeader>
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-2">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg">Dokumen</CardTitle>
+              <CardDescription>
+                Upload atau ganti surat permohonan (opsional)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <DocumentUpload
+                value={documentPreview}
+                file={documentFile}
+                onChange={handleDocumentChange}
+                label="Surat Permohonan"
+                maxSizeMB={5}
+              />
+              {event.document_path && !documentFile && (
+                <p className="text-xs text-muted-foreground">
+                  Dokumen saat ini akan dipertahankan jika tidak mengupload dokumen baru
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </main>
 
         {/* Fixed Bottom Button */}
@@ -269,11 +399,20 @@ const EventEdit = () => {
           <div className="max-w-lg mx-auto">
             <Button
               className="w-full h-12 text-base"
-              onClick={() => setShowConfirmation(true)}
-              disabled={!isFormValid}
+              onClick={handleOpenConfirmation}
+              disabled={!isFormValid || checkDuplicate.isPending}
             >
-              <Save className="h-4 w-4 mr-2" />
-              Simpan Perubahan
+              {checkDuplicate.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Memeriksa...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Simpan Perubahan
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -308,21 +447,37 @@ const EventEdit = () => {
                   <span className="text-sm font-medium">{formData.category}</span>
                 </div>
               )}
+              {(documentFile || event?.document_path) && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Dokumen</span>
+                  <span className="text-sm font-medium text-primary">
+                    {documentFile ? `📎 ${documentFile.name} (baru)` : "📎 Dokumen existing"}
+                  </span>
+                </div>
+              )}
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 className="w-full sm:w-auto"
                 onClick={() => setShowConfirmation(false)}
+                disabled={isUploading || updateEvent.isPending}
               >
                 Batal
               </Button>
               <Button
                 className="w-full sm:w-auto"
                 onClick={handleSubmit}
-                disabled={updateEvent.isPending}
+                disabled={isUploading || updateEvent.isPending}
               >
-                {updateEvent.isPending ? "Menyimpan..." : "Konfirmasi & Simpan"}
+                {isUploading || updateEvent.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  "Konfirmasi & Simpan"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
