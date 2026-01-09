@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, CheckCircle, XCircle, Clock, User, MapPin, Calendar, FileText, Loader2 } from "lucide-react";
+import { Search, CheckCircle, XCircle, Clock, User, MapPin, Calendar, FileText, Loader2, Mail } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import { id as localeId } from "date-fns/locale";
 interface PendingUser {
   id: string;
   full_name: string;
+  email: string | null;
   kabupaten_kota_id: string | null;
   kabupaten_kota_name: string | null;
   requested_role: string | null;
@@ -60,13 +61,15 @@ export default function UserApprovals() {
   );
 
   const filteredPendingUsers = pendingUsers?.filter((user) => {
-    const matchesSearch = user.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesKabKota = filterKabKota === "all" || user.kabupaten_kota_name === filterKabKota;
     return matchesSearch && matchesKabKota;
   }) || [];
 
   const filteredHistoryUsers = historyUsers?.filter((user) => {
-    const matchesSearch = user.full_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesKabKota = filterKabKota === "all" || user.kabupaten_kota_name === filterKabKota;
     return matchesSearch && matchesKabKota;
   }) || [];
@@ -259,6 +262,7 @@ export default function UserApprovals() {
                         <CardContent className="p-4">
                           <div className="mb-2">
                             <h3 className="font-semibold text-base truncate">{user.full_name}</h3>
+                            <p className="text-xs text-muted-foreground truncate">{user.email || "-"}</p>
                             <p className="text-sm text-primary">
                               Ingin menjadi <span className="font-medium">{getRoleLabel(user.requested_role)}</span>
                             </p>
@@ -329,6 +333,7 @@ export default function UserApprovals() {
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1 min-w-0">
                               <h3 className="font-semibold text-sm truncate">{user.full_name}</h3>
+                              <p className="text-xs text-muted-foreground truncate">{user.email || "-"}</p>
                               <p className="text-xs text-muted-foreground">
                                 {getRoleLabel(user.requested_role)}
                               </p>
@@ -393,6 +398,16 @@ export default function UserApprovals() {
                         <div>
                           <p className="text-sm text-muted-foreground">Role yang Diminta</p>
                           <p className="font-medium">{getRoleLabel(selectedUser.requested_role)}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Mail className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="font-medium">{selectedUser.email || "-"}</p>
                         </div>
                       </div>
 
