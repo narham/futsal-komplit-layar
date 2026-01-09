@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Search, Filter, Calendar, MapPin, ChevronRight, Loader2, CalendarDays } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Search, Filter, Calendar, MapPin, ChevronRight, CalendarDays } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { useEvents, getEventStatusDisplay, EventStatus } from "@/hooks/useEvents";
+import { EventFilterSheet, EventFilters } from "@/components/events/EventFilterSheet";
+import { EventListSkeleton } from "@/components/events/EventCardSkeleton";
+import { EventEmptyState } from "@/components/events/EventEmptyState";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -24,16 +28,26 @@ export default function Events() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const [filters, setFilters] = useState<EventFilters>({
+    kabupatenKotaId: null,
+    category: null,
+  });
   
   const { data: events, isLoading } = useEvents();
 
-  const filteredEvents = events?.filter((event) => {
-    const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTab =
-      activeTab === "all" ||
-      event.status === activeTab;
-    return matchesSearch && matchesTab;
-  }) || [];
+  const filteredEvents = useMemo(() => {
+    return events?.filter((event) => {
+      const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTab = activeTab === "all" || event.status === activeTab;
+      const matchesKabKota = !filters.kabupatenKotaId || event.kabupaten_kota_id === filters.kabupatenKotaId;
+      const matchesCategory = !filters.category || event.category === filters.category;
+      return matchesSearch && matchesTab && matchesKabKota && matchesCategory;
+    }) || [];
+  }, [events, searchQuery, activeTab, filters]);
+
+  const activeFilterCount = [filters.kabupatenKotaId, filters.category].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
 
   return (
     <AppLayout title="Event">
@@ -52,8 +66,21 @@ export default function Events() {
           <Button variant="outline" size="icon" onClick={() => navigate("/events/calendar")} title="Lihat Kalender" className="h-11 w-11">
             <CalendarDays className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" className="h-11 w-11">
+          <Button 
+            variant={hasActiveFilters ? "default" : "outline"} 
+            size="icon" 
+            className="h-11 w-11 relative"
+            onClick={() => setShowFilterSheet(true)}
+          >
             <Filter className="h-4 w-4" />
+            {hasActiveFilters && (
+              <Badge 
+                variant="secondary" 
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-primary-foreground text-primary"
+              >
+                {activeFilterCount}
+              </Badge>
+            )}
           </Button>
         </div>
 
@@ -81,15 +108,12 @@ export default function Events() {
         {/* Event List */}
         <div className="space-y-3">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <EventListSkeleton count={5} />
           ) : filteredEvents.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center text-muted-foreground">
-                {searchQuery ? "Tidak ada event yang cocok" : "Belum ada event"}
-              </CardContent>
-            </Card>
+            <EventEmptyState 
+              hasSearchQuery={!!searchQuery} 
+              hasFilters={hasActiveFilters || activeTab !== "all"} 
+            />
           ) : (
             filteredEvents.map((event) => {
               const statusDisplay = getEventStatusDisplay(event.status as EventStatus);
@@ -129,7 +153,7 @@ export default function Events() {
                           )}
                         </div>
                         {event.category && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground capitalize">
                             {event.category}
                           </span>
                         )}
@@ -151,6 +175,14 @@ export default function Events() {
           <Plus className="h-5 w-5" />
           <span className="font-medium">Ajukan</span>
         </Button>
+
+        {/* Filter Sheet */}
+        <EventFilterSheet
+          open={showFilterSheet}
+          onOpenChange={setShowFilterSheet}
+          filters={filters}
+          onApplyFilters={setFilters}
+        />
       </div>
     </AppLayout>
   );

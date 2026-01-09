@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DocumentUpload } from "@/components/ui/document-upload";
 import { ArrowLeft, CalendarIcon, MapPin, Trophy, CheckCircle2, FileText } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useCreateEvent } from "@/hooks/useEvents";
@@ -20,6 +20,9 @@ import { useKabupatenKotaList } from "@/hooks/useOrganization";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+// Disable dates before today
+const today = startOfDay(new Date());
 
 const EventSubmission = () => {
   const navigate = useNavigate();
@@ -303,7 +306,7 @@ const EventSubmission = () => {
                       mode="single"
                       selected={eventDate}
                       onSelect={setEventDate}
-                      disabled={(date) => date < new Date()}
+                      disabled={(date) => date < today}
                       initialFocus
                       className="pointer-events-auto"
                     />
