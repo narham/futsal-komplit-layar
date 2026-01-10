@@ -11,7 +11,7 @@ import { usePengurusList, useProvinsiList, useKabupatenKotaList } from "@/hooks/
 import { Badge } from "@/components/ui/badge";
 
 const organizationData = {
-  name: "Federasi Futsal Sulawesi Selatan",
+  name: "Asosiasi Futsal Provinsi Sulawesi Selatan",
   established: "2015",
   address: "Jl. Perintis Kemerdekaan KM 12, Makassar",
   phone: "(0411) 123-4567",

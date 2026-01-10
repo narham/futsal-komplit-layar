@@ -168,7 +168,7 @@ export default function Settings() {
                   <Label htmlFor="org_name">Nama Organisasi</Label>
                   <Input
                     id="org_name"
-                    placeholder="Federasi Futsal Indonesia - Sulawesi Selatan"
+                    placeholder="Asosiasi Futsal Provinsi Sulawesi Selatan"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
                   />
@@ -179,7 +179,7 @@ export default function Settings() {
                   <Input
                     id="org_email"
                     type="email"
-                    placeholder="info@ffisulsel.or.id"
+                    placeholder="info@afpsulsel.org"
                     value={orgEmail}
                     onChange={(e) => setOrgEmail(e.target.value)}
                   />

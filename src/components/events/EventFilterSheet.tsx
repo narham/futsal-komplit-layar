@@ -21,9 +21,12 @@ interface EventFilterSheetProps {
 const EVENT_CATEGORIES = [
   { value: "liga", label: "Liga" },
   { value: "turnamen", label: "Turnamen" },
-  { value: "friendly", label: "Pertandingan Persahabatan" },
   { value: "pelajar", label: "Pelajar" },
-  { value: "lainnya", label: "Lainnya" },
+  { value: "sekolah", label: "Sekolah" },
+  { value: "mahasiswa", label: "Mahasiswa" },
+  { value: "instansi", label: "Instansi" },
+  { value: "umum", label: "Umum" },
+  { value: "lain", label: "Lainnya" },
 ];
 
 export function EventFilterSheet({ open, onOpenChange, filters, onApplyFilters }: EventFilterSheetProps) {
