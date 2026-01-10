@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { 
   Search, 
   Filter, 
-  Wallet, 
   User, 
   Calendar,
   MapPin,
@@ -14,7 +13,10 @@ import {
   Users,
   BadgeCheck,
   AlertCircle,
-  Loader2
+  Loader2,
+  FileText,
+  Check,
+  X
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -51,8 +55,20 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useRefereeIncomeSummary, formatCurrency, RefereeIncomeSummary } from "@/hooks/useReports";
+import { useHonors, useVerifyHonor, Honor, HonorStatus, getHonorStatusDisplay } from "@/hooks/useHonors";
 import { useKabupatenKota } from "@/hooks/useUsers";
 import { useAuth } from "@/contexts/AuthContext";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
@@ -93,6 +109,13 @@ export default function AdminHonorMonitoring() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedReferee, setSelectedReferee] = useState<RefereeIncomeSummary | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Honor detail states
+  const [honorStatusFilter, setHonorStatusFilter] = useState<"all" | HonorStatus>("all");
+  const [selectedHonor, setSelectedHonor] = useState<Honor | null>(null);
+  const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   const { data: kabupatenKotaList } = useKabupatenKota();
   
@@ -135,6 +158,54 @@ export default function AdminHonorMonitoring() {
     startDate: dateFilters.startDate,
     endDate: dateFilters.endDate,
   });
+
+  // Fetch honors when a referee is selected
+  const { data: refereeHonors, isLoading: honorsLoading } = useHonors({
+    refereeId: selectedReferee?.referee_id,
+  });
+
+  const verifyHonor = useVerifyHonor();
+
+  // Filter honors by status
+  const filteredHonors = useMemo(() => {
+    if (!refereeHonors) return [];
+    if (honorStatusFilter === "all") return refereeHonors;
+    return refereeHonors.filter(h => h.status === honorStatusFilter);
+  }, [refereeHonors, honorStatusFilter]);
+
+  // Handle verify
+  const handleVerify = async () => {
+    if (!selectedHonor) return;
+    
+    await verifyHonor.mutateAsync({
+      id: selectedHonor.id,
+      status: "verified",
+    });
+    
+    setShowVerifyDialog(false);
+    setSelectedHonor(null);
+  };
+
+  // Handle reject
+  const handleReject = async () => {
+    if (!selectedHonor || !rejectReason.trim()) return;
+    
+    await verifyHonor.mutateAsync({
+      id: selectedHonor.id,
+      status: "rejected",
+      notes: rejectReason.trim(),
+    });
+    
+    setShowRejectDialog(false);
+    setSelectedHonor(null);
+    setRejectReason("");
+  };
+
+  // Reset honor filters when dialog closes
+  const handleCloseDetailDialog = () => {
+    setSelectedReferee(null);
+    setHonorStatusFilter("all");
+  };
 
   const periodOptions = [
     { value: "all", label: "Semua Periode" },
@@ -523,8 +594,8 @@ export default function AdminHonorMonitoring() {
       </div>
 
       {/* Referee Detail Dialog */}
-      <Dialog open={!!selectedReferee} onOpenChange={() => setSelectedReferee(null)}>
-        <DialogContent>
+      <Dialog open={!!selectedReferee} onOpenChange={handleCloseDetailDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Detail Honor Wasit</DialogTitle>
             <DialogDescription>
@@ -532,7 +603,8 @@ export default function AdminHonorMonitoring() {
             </DialogDescription>
           </DialogHeader>
           {selectedReferee && (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-1">
+              {/* Referee Info */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
                   <User className="h-6 w-6 text-muted-foreground" />
@@ -543,36 +615,252 @@ export default function AdminHonorMonitoring() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-3 gap-3">
                 <Card className="bg-success/5 border-success/20">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Total Terverifikasi</p>
-                    <p className="text-xl font-bold text-success">{formatCurrency(selectedReferee.total_verified_income)}</p>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Terverifikasi</p>
+                    <p className="text-lg font-bold text-success">{formatCurrency(selectedReferee.total_verified_income)}</p>
                     <p className="text-xs text-muted-foreground">{selectedReferee.verified_count} transaksi</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-warning/5 border-warning/20">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Total Pending</p>
-                    <p className="text-xl font-bold text-warning">{formatCurrency(selectedReferee.total_pending_income)}</p>
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Pending</p>
+                    <p className="text-lg font-bold text-warning">{formatCurrency(selectedReferee.total_pending_income)}</p>
                     <p className="text-xs text-muted-foreground">{selectedReferee.pending_count} transaksi</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-destructive/5 border-destructive/20">
+                  <CardContent className="p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Ditolak</p>
+                    <p className="text-lg font-bold text-destructive">{selectedReferee.rejected_count}</p>
+                    <p className="text-xs text-muted-foreground">transaksi</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {selectedReferee.rejected_count > 0 && (
-                <Card className="bg-destructive/5 border-destructive/20">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Ditolak</p>
-                    <p className="text-xl font-bold text-destructive">{selectedReferee.rejected_count}</p>
-                    <p className="text-xs text-muted-foreground">transaksi</p>
-                  </CardContent>
-                </Card>
-              )}
+              <Separator />
+
+              {/* Honor List */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Daftar Honor</h4>
+                  <Select 
+                    value={honorStatusFilter} 
+                    onValueChange={(v) => setHonorStatusFilter(v as "all" | HonorStatus)}
+                  >
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Filter Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua Status</SelectItem>
+                      <SelectItem value="submitted">Menunggu</SelectItem>
+                      <SelectItem value="verified">Terverifikasi</SelectItem>
+                      <SelectItem value="rejected">Ditolak</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {honorsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : filteredHonors.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Tidak ada data honor</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-3 pr-4">
+                      {filteredHonors.map((honor) => {
+                        const statusDisplay = getHonorStatusDisplay(honor.status);
+                        return (
+                          <Card key={honor.id} className="overflow-hidden">
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                    <p className="font-medium truncate">
+                                      {honor.events?.name || "Event tidak tersedia"}
+                                    </p>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground space-y-1">
+                                    {honor.events && (
+                                      <p>
+                                        {format(new Date(honor.events.start_date), "dd MMM yyyy")}
+                                        {honor.events.end_date !== honor.events.start_date && 
+                                          ` - ${format(new Date(honor.events.end_date), "dd MMM yyyy")}`}
+                                      </p>
+                                    )}
+                                    <p className="text-lg font-semibold text-foreground">
+                                      {formatCurrency(honor.amount)}
+                                    </p>
+                                    {honor.notes && (
+                                      <p className="text-xs italic">Catatan: {honor.notes}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <StatusBadge status={statusDisplay.variant}>
+                                  {statusDisplay.label}
+                                </StatusBadge>
+                              </div>
+
+                              {/* Verification Info */}
+                              {honor.status === "verified" && honor.verified_at && (
+                                <div className="mt-3 pt-3 border-t text-xs text-muted-foreground flex items-center gap-1">
+                                  <CheckCircle2 className="h-3 w-3 text-success" />
+                                  <span>
+                                    Diverifikasi {format(new Date(honor.verified_at), "dd MMM yyyy")}
+                                  </span>
+                                </div>
+                              )}
+
+                              {honor.status === "rejected" && (
+                                <div className="mt-3 pt-3 border-t text-xs text-destructive flex items-center gap-1">
+                                  <XCircle className="h-3 w-3" />
+                                  <span>Ditolak{honor.notes && `: ${honor.notes}`}</span>
+                                </div>
+                              )}
+
+                              {/* Action Buttons for Submitted */}
+                              {honor.status === "submitted" && (
+                                <div className="mt-3 pt-3 border-t flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="flex-1 text-success border-success/30 hover:bg-success/10"
+                                    onClick={() => {
+                                      setSelectedHonor(honor);
+                                      setShowVerifyDialog(true);
+                                    }}
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Verifikasi
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                                    onClick={() => {
+                                      setSelectedHonor(honor);
+                                      setShowRejectDialog(true);
+                                    }}
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Tolak
+                                  </Button>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Verify Confirmation Dialog */}
+      <AlertDialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Verifikasi Honor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin memverifikasi honor berikut?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {selectedHonor && (
+            <div className="py-4 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Event:</span>
+                <span className="font-medium">{selectedHonor.events?.name || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Jumlah:</span>
+                <span className="font-medium text-success">{formatCurrency(selectedHonor.amount)}</span>
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={verifyHonor.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleVerify}
+              disabled={verifyHonor.isPending}
+              className="bg-success hover:bg-success/90"
+            >
+              {verifyHonor.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              Ya, Verifikasi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Dialog */}
+      <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tolak Honor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Berikan alasan penolakan honor ini.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {selectedHonor && (
+            <div className="space-y-4">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Event:</span>
+                  <span className="font-medium">{selectedHonor.events?.name || "-"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Jumlah:</span>
+                  <span className="font-medium">{formatCurrency(selectedHonor.amount)}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Alasan Penolakan *</label>
+                <Textarea
+                  placeholder="Masukkan alasan penolakan..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              disabled={verifyHonor.isPending}
+              onClick={() => setRejectReason("")}
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleReject}
+              disabled={verifyHonor.isPending || !rejectReason.trim()}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {verifyHonor.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <X className="h-4 w-4 mr-2" />
+              )}
+              Ya, Tolak
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
