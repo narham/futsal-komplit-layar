@@ -43,7 +43,8 @@ const EventEdit = () => {
     category: "",
     kabupatenKotaId: "",
   });
-  const [eventDate, setEventDate] = useState<Date | undefined>();
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [documentPreview, setDocumentPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -66,7 +67,10 @@ const EventEdit = () => {
         kabupatenKotaId: event.kabupaten_kota_id || "",
       });
       if (event.start_date) {
-        setEventDate(parseISO(event.start_date));
+        setStartDate(parseISO(event.start_date));
+      }
+      if (event.end_date) {
+        setEndDate(parseISO(event.end_date));
       }
       // Set existing document preview
       if (event.document_path && existingDocumentUrl) {
@@ -88,15 +92,15 @@ const EventEdit = () => {
     setDocumentFile(file);
   };
 
-  const isFormValid = formData.eventName.trim() !== "" && eventDate && formData.location.trim() !== "";
+  const isFormValid = formData.eventName.trim() !== "" && startDate && endDate && formData.location.trim() !== "";
 
   const handleCheckDuplicate = async () => {
-    if (!eventDate || !formData.eventName.trim()) return true;
+    if (!startDate || !formData.eventName.trim()) return true;
 
     try {
       const result = await checkDuplicate.mutateAsync({
         name: formData.eventName,
-        date: format(eventDate, "yyyy-MM-dd"),
+        date: format(startDate, "yyyy-MM-dd"),
         excludeEventId: eventId,
       });
 
@@ -122,7 +126,7 @@ const EventEdit = () => {
   };
 
   const handleSubmit = async () => {
-    if (!eventDate || !user || !eventId) return;
+    if (!startDate || !endDate || !user || !eventId) return;
 
     try {
       setIsUploading(true);
@@ -157,8 +161,8 @@ const EventEdit = () => {
       await updateEvent.mutateAsync({
         id: eventId,
         name: formData.eventName,
-        start_date: format(eventDate, "yyyy-MM-dd"),
-        end_date: format(eventDate, "yyyy-MM-dd"),
+        start_date: format(startDate, "yyyy-MM-dd"),
+        end_date: format(endDate, "yyyy-MM-dd"),
         location: formData.location,
         description: formData.description || null,
         category: formData.category || null,
@@ -280,40 +284,84 @@ const EventEdit = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Tanggal Pelaksanaan *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !eventDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {eventDate ? (
-                        format(eventDate, "d MMMM yyyy", { locale: id })
-                      ) : (
-                        <span>Pilih tanggal</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={eventDate}
-                      onSelect={(date) => {
-                        setEventDate(date);
-                        setDuplicateWarning(null);
-                      }}
-                      disabled={(date) => date < today}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Tanggal Mulai *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? (
+                          format(startDate, "d MMM yyyy", { locale: id })
+                        ) : (
+                          <span>Pilih</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={(date) => {
+                          setStartDate(date);
+                          setDuplicateWarning(null);
+                          // Auto-adjust end date if it's before start date
+                          if (date && endDate && endDate < date) {
+                            setEndDate(date);
+                          }
+                        }}
+                        disabled={(date) => date < today}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tanggal Selesai *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? (
+                          format(endDate, "d MMM yyyy", { locale: id })
+                        ) : (
+                          <span>Pilih</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        disabled={(date) => date < today || (startDate ? date < startDate : false)}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
+              
+              {startDate && endDate && startDate.getTime() !== endDate.getTime() && (
+                <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                  Durasi event: {Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1} hari
+                </p>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="location">Lokasi *</Label>
@@ -432,12 +480,18 @@ const EventEdit = () => {
                 <span className="text-sm text-muted-foreground">Nama Event</span>
                 <span className="text-sm font-medium">{formData.eventName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Tanggal</span>
-                <span className="text-sm font-medium">
-                  {eventDate && format(eventDate, "d MMMM yyyy", { locale: id })}
-                </span>
-              </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Tanggal Mulai</span>
+              <span className="text-sm font-medium">
+                {startDate && format(startDate, "d MMMM yyyy", { locale: id })}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Tanggal Selesai</span>
+              <span className="text-sm font-medium">
+                {endDate && format(endDate, "d MMMM yyyy", { locale: id })}
+              </span>
+            </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Lokasi</span>
                 <span className="text-sm font-medium">{formData.location}</span>
