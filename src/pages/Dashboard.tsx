@@ -17,6 +17,7 @@ import {
   BookOpen,
   MessageSquare,
   UserCheck,
+  Wallet,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -103,6 +104,17 @@ export default function Dashboard() {
       path: "/settings",
       iconBgClass: "bg-muted",
       iconColorClass: "text-muted-foreground"
+    },
+  ];
+
+  // Admin exclusive actions (both admin_provinsi and admin_kab_kota)
+  const adminActions: QuickActionItem[] = [
+    { 
+      icon: Wallet, 
+      label: "Honor Wasit", 
+      path: "/admin/honor",
+      iconBgClass: "bg-emerald-100 dark:bg-emerald-900/30",
+      iconColorClass: "text-emerald-600 dark:text-emerald-400"
     },
   ];
 
@@ -207,11 +219,9 @@ export default function Dashboard() {
           <div className="mt-3">
             <QuickActionGrid items={secondRowActions} columns={4} />
           </div>
-          {adminProvinsiActions.length > 0 && (
-            <div className="mt-3">
-              <QuickActionGrid items={adminProvinsiActions} columns={3} />
-            </div>
-          )}
+          <div className="mt-3">
+            <QuickActionGrid items={[...adminActions, ...adminProvinsiActions]} columns={isAdminProvinsi() ? 4 : 3} />
+          </div>
         </section>
 
         {/* Recent Activity */}
