@@ -128,7 +128,7 @@ export default function Events() {
                           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3 flex-shrink-0" />
-                              {format(new Date(event.date), "d MMM yyyy", { locale: id })}
+                              {format(new Date(event.start_date), "d MMM yyyy", { locale: id })}
                             </span>
                             {event.location && (
                               <span className="flex items-center gap-1">

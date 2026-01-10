@@ -23,7 +23,8 @@ export interface Evaluation {
   event?: {
     id: string;
     name: string;
-    date: string;
+    start_date: string;
+    end_date: string;
     location: string | null;
   };
   referee?: {
@@ -72,7 +73,7 @@ export function useEvaluations(status?: string) {
         .from("evaluations")
         .select(`
           *,
-          event:events(id, name, date, location),
+          event:events(id, name, start_date, end_date, location),
           referee:profiles!evaluations_referee_id_fkey(id, full_name, profile_photo_url),
           evaluator:profiles!evaluations_evaluator_id_fkey(id, full_name)
         `)
@@ -99,7 +100,7 @@ export function useEvaluation(id: string) {
         .from("evaluations")
         .select(`
           *,
-          event:events(id, name, date, location),
+          event:events(id, name, start_date, end_date, location),
           referee:profiles!evaluations_referee_id_fkey(id, full_name, profile_photo_url),
           evaluator:profiles!evaluations_evaluator_id_fkey(id, full_name)
         `)
@@ -231,7 +232,8 @@ export function useEvaluatableEvents() {
         .select(`
           id,
           name,
-          date,
+          start_date,
+          end_date,
           location,
           event_assignments(
             id,
@@ -242,7 +244,7 @@ export function useEvaluatableEvents() {
         `)
         .eq("status", "SELESAI")
         .eq("event_assignments.status", "confirmed")
-        .order("date", { ascending: false });
+        .order("start_date", { ascending: false });
 
       if (error) throw error;
       return data;

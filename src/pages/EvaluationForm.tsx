@@ -178,10 +178,10 @@ export default function EvaluationForm() {
               </div>
             </div>
             <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-              {evaluation.event?.date && (
+              {evaluation.event?.start_date && (
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(evaluation.event.date), "d MMMM yyyy", { locale: localeId })}
+                  {format(new Date(evaluation.event.start_date), "d MMMM yyyy", { locale: localeId })}
                 </span>
               )}
               {evaluation.event?.location && (

@@ -27,7 +27,8 @@ interface EventAssignment {
 interface EvaluatableEvent {
   id: string;
   name: string;
-  date: string;
+  start_date: string;
+  end_date: string;
   location: string | null;
   event_assignments: EventAssignment[];
 }
@@ -99,7 +100,7 @@ export default function EvaluationNew() {
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  {format(new Date(selectedEvent.date), "d MMMM yyyy", { locale: localeId })}
+                  {format(new Date(selectedEvent.start_date), "d MMMM yyyy", { locale: localeId })}
                 </span>
                 {selectedEvent.location && (
                   <span className="flex items-center gap-1">
@@ -181,7 +182,7 @@ export default function EvaluationNew() {
                     <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        {format(new Date(event.date), "d MMM yyyy", { locale: localeId })}
+                        {format(new Date(event.start_date), "d MMM yyyy", { locale: localeId })}
                       </span>
                       {event.location && (
                         <span className="flex items-center gap-1">

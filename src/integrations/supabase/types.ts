@@ -509,14 +509,15 @@ export type Database = {
           category: string | null
           created_at: string | null
           created_by: string | null
-          date: string
           deleted_at: string | null
           description: string | null
           document_path: string | null
+          end_date: string
           id: string
           kabupaten_kota_id: string | null
           location: string | null
           name: string
+          start_date: string
           status: string | null
           updated_at: string | null
         }
@@ -524,14 +525,15 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           created_by?: string | null
-          date: string
           deleted_at?: string | null
           description?: string | null
           document_path?: string | null
+          end_date: string
           id?: string
           kabupaten_kota_id?: string | null
           location?: string | null
           name: string
+          start_date: string
           status?: string | null
           updated_at?: string | null
         }
@@ -539,14 +541,15 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           created_by?: string | null
-          date?: string
           deleted_at?: string | null
           description?: string | null
           document_path?: string | null
+          end_date?: string
           id?: string
           kabupaten_kota_id?: string | null
           location?: string | null
           name?: string
+          start_date?: string
           status?: string | null
           updated_at?: string | null
         }
@@ -1462,6 +1465,7 @@ export type Database = {
       }
     }
     Functions: {
+      auto_complete_past_events: { Args: never; Returns: undefined }
       can_access_region: {
         Args: { _kabupaten_kota_id: string; _user_id: string }
         Returns: boolean

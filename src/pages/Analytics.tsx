@@ -148,7 +148,7 @@ export default function Analytics() {
     queryFn: async () => {
       const { data: events, error } = await supabase
         .from("events")
-        .select("id, status, date, category, kabupaten_kota_id, created_at")
+        .select("id, status, start_date, end_date, category, kabupaten_kota_id, created_at")
         .is("deleted_at", null);
 
       if (error) throw error;
@@ -172,7 +172,7 @@ export default function Analytics() {
         const monthStart = startOfMonth(subMonths(new Date(), i));
         const monthEnd = endOfMonth(subMonths(new Date(), i));
         const monthEvents = events?.filter(e => {
-          const eventDate = new Date(e.date);
+          const eventDate = new Date(e.start_date);
           return eventDate >= monthStart && eventDate <= monthEnd;
         }) || [];
 

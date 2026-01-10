@@ -230,7 +230,7 @@ export default function EventDetail() {
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              {format(new Date(event.date), "d MMMM yyyy", { locale: id })}
+              {format(new Date(event.start_date), "d MMMM yyyy", { locale: id })}{event.end_date !== event.start_date && ` - ${format(new Date(event.end_date), "d MMMM yyyy", { locale: id })}`}
             </span>
             {event.location && (
               <span className="flex items-center gap-2 text-muted-foreground">

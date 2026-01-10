@@ -241,8 +241,8 @@ export default function RefereeDashboard() {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                       <Calendar className="h-3 w-3" />
                       <span>
-                        {assignment.event?.date 
-                          ? format(new Date(assignment.event.date), "dd MMM yyyy", { locale: id })
+                        {assignment.event?.start_date 
+                          ? format(new Date(assignment.event.start_date), "dd MMM yyyy", { locale: id })
                           : "-"
                         }
                       </span>
@@ -321,7 +321,7 @@ export default function RefereeDashboard() {
                         <div className="flex items-center justify-between mt-3 pt-3 border-t">
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {honor.events?.date || "-"}
+                            {honor.events?.start_date || "-"}
                           </span>
                           <span className="font-semibold text-sm text-warning">
                             {formatCurrency(honor.amount)}
@@ -349,7 +349,7 @@ export default function RefereeDashboard() {
                               {honor.events?.name || "Event tidak ditemukan"}
                             </h4>
                             <p className="text-xs text-muted-foreground">
-                              {honor.events?.date || "-"}
+                              {honor.events?.start_date || "-"}
                             </p>
                           </div>
                           {getHonorStatusBadge(honor.status)}

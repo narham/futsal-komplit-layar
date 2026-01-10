@@ -65,8 +65,8 @@ const EventEdit = () => {
         category: event.category || "",
         kabupatenKotaId: event.kabupaten_kota_id || "",
       });
-      if (event.date) {
-        setEventDate(parseISO(event.date));
+      if (event.start_date) {
+        setEventDate(parseISO(event.start_date));
       }
       // Set existing document preview
       if (event.document_path && existingDocumentUrl) {
@@ -157,13 +157,14 @@ const EventEdit = () => {
       await updateEvent.mutateAsync({
         id: eventId,
         name: formData.eventName,
-        date: format(eventDate, "yyyy-MM-dd"),
+        start_date: format(eventDate, "yyyy-MM-dd"),
+        end_date: format(eventDate, "yyyy-MM-dd"),
         location: formData.location,
         description: formData.description || null,
         category: formData.category || null,
         kabupaten_kota_id: formData.kabupatenKotaId || null,
         document_path: documentPath,
-      });
+      } as any);
       
       setShowConfirmation(false);
       navigate(`/events/${eventId}`);

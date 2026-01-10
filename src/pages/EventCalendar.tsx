@@ -44,7 +44,7 @@ export default function EventCalendar() {
   const eventsOnSelectedDate = useMemo(() => {
     if (!selectedDate || !filteredEvents) return [];
     return filteredEvents.filter((event) => 
-      isSameDay(new Date(event.date), selectedDate)
+      isSameDay(new Date(event.start_date), selectedDate)
     );
   }, [selectedDate, filteredEvents]);
 
@@ -54,7 +54,7 @@ export default function EventCalendar() {
     const countMap = new Map<string, number>();
     
     filteredEvents.forEach((event) => {
-      const dateKey = format(new Date(event.date), "yyyy-MM-dd");
+      const dateKey = format(new Date(event.start_date), "yyyy-MM-dd");
       countMap.set(dateKey, (countMap.get(dateKey) || 0) + 1);
     });
     
@@ -68,7 +68,7 @@ export default function EventCalendar() {
     const end = endOfMonth(currentMonth);
     
     return filteredEvents.filter((event) => {
-      const eventDate = new Date(event.date);
+      const eventDate = new Date(event.start_date);
       return eventDate >= start && eventDate <= end;
     });
   }, [filteredEvents, currentMonth]);
@@ -328,10 +328,10 @@ export default function EventCalendar() {
             ) : (
               <div className="divide-y">
                 {eventsInMonth
-                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
                   .map((event) => {
                     const statusDisplay = getEventStatusDisplay(event.status);
-                    const eventDate = new Date(event.date);
+                    const eventDate = new Date(event.start_date);
                     const isPast = eventDate < new Date() && !isToday(eventDate);
                     
                     return (
