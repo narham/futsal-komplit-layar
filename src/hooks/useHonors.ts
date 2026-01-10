@@ -19,7 +19,8 @@ export interface Honor {
   events?: {
     id: string;
     name: string;
-    date: string;
+    start_date: string;
+    end_date: string;
     category: string | null;
   } | null;
   referee?: {
@@ -54,7 +55,7 @@ export function useHonors(filters?: { status?: HonorStatus; refereeId?: string }
         .from("honors")
         .select(`
           *,
-          events (id, name, date, category)
+          events (id, name, start_date, end_date, category)
         `)
         .order("created_at", { ascending: false });
 
@@ -132,7 +133,7 @@ export function useEligibleEventsForHonor() {
       const { data: assignments, error: assignError } = await supabase
         .from("event_assignments")
         .select(`
-          event:event_id (id, name, date, status, category)
+          event:event_id (id, name, start_date, end_date, status, category)
         `)
         .eq("referee_id", user.id)
         .neq("status", "cancelled");

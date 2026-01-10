@@ -274,7 +274,7 @@ export default function RefereeHonor() {
                         <div className="flex flex-col">
                           <span>{event.name}</span>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(event.date), "dd MMM yyyy", { locale: id })} • {event.location || "Lokasi belum ditentukan"}
+                            {format(new Date(event.start_date), "dd MMM yyyy", { locale: id })} • {event.location || "Lokasi belum ditentukan"}
                           </span>
                         </div>
                       </SelectItem>
@@ -295,7 +295,7 @@ export default function RefereeHonor() {
                           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(event.date), "dd MMM yyyy", { locale: id })}
+                              {format(new Date(event.start_date), "dd MMM yyyy", { locale: id })}
                             </span>
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
@@ -411,8 +411,8 @@ export default function RefereeHonor() {
                           </h3>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                             <Calendar className="h-3 w-3" />
-                            {entry.events?.date 
-                              ? format(new Date(entry.events.date), "dd MMM yyyy", { locale: id })
+                            {entry.events?.start_date 
+                              ? format(new Date(entry.events.start_date), "dd MMM yyyy", { locale: id })
                               : "-"
                             }
                           </p>

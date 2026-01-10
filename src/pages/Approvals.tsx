@@ -256,7 +256,7 @@ export default function Approvals() {
                             </span>
                             <span className="flex items-center gap-1 text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(event.date), "d MMM yyyy", { locale: localeId })}
+                              {format(new Date(event.start_date), "d MMM yyyy", { locale: localeId })}
                             </span>
                           </div>
                           <div className="flex items-center justify-between mt-3">
@@ -299,7 +299,7 @@ export default function Approvals() {
                             </span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(event.date), "d MMM yyyy", { locale: localeId })}
+                              {format(new Date(event.start_date), "d MMM yyyy", { locale: localeId })}
                             </span>
                           </div>
                         </CardContent>
@@ -341,7 +341,7 @@ export default function Approvals() {
                         <div>
                           <p className="text-sm text-muted-foreground">Tanggal</p>
                           <p className="font-medium">
-                            {format(new Date(selectedEvent.date), "d MMMM yyyy", { locale: localeId })}
+                            {format(new Date(selectedEvent.start_date), "d MMMM yyyy", { locale: localeId })}
                           </p>
                         </div>
                       </div>

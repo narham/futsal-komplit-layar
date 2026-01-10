@@ -15,7 +15,8 @@ export interface RefereeEventAssignment {
   event: {
     id: string;
     name: string;
-    date: string;
+    start_date: string;
+    end_date: string;
     location: string | null;
     status: string;
     category: string | null;
@@ -57,7 +58,8 @@ export function useRefereeEvents() {
           event:event_id (
             id,
             name,
-            date,
+            start_date,
+            end_date,
             location,
             status,
             category,
@@ -94,35 +96,35 @@ export function useRefereeEvents() {
   });
 }
 
-// Get upcoming events (date >= today and event status is DISETUJUI, excluding cancelled)
+// Get upcoming events (start_date >= today and event status is DISETUJUI, excluding cancelled)
 export function useUpcomingRefereeEvents() {
   const { data: allEvents, ...rest } = useRefereeEvents();
   
   const today = new Date().toISOString().split("T")[0];
   
   const upcomingEvents = allEvents?.filter(assignment => 
-    assignment.event?.date && 
-    assignment.event.date >= today &&
+    assignment.event?.start_date && 
+    assignment.event.start_date >= today &&
     assignment.event.status === "DISETUJUI" &&
     assignment.status !== "cancelled" // Exclude cancelled assignments
   ).sort((a, b) => 
-    (a.event?.date || "").localeCompare(b.event?.date || "")
+    (a.event?.start_date || "").localeCompare(b.event?.start_date || "")
   );
 
   return { data: upcomingEvents, ...rest };
 }
 
-// Get past events (date < today or event status is SELESAI)
+// Get past events (end_date < today or event status is SELESAI)
 export function usePastRefereeEvents() {
   const { data: allEvents, ...rest } = useRefereeEvents();
   
   const today = new Date().toISOString().split("T")[0];
   
   const pastEvents = allEvents?.filter(assignment => 
-    assignment.event?.date && 
-    (assignment.event.date < today || assignment.event.status === "SELESAI")
+    assignment.event?.end_date && 
+    (assignment.event.end_date < today || assignment.event.status === "SELESAI")
   ).sort((a, b) => 
-    (b.event?.date || "").localeCompare(a.event?.date || "")
+    (b.event?.start_date || "").localeCompare(a.event?.start_date || "")
   );
 
   return { data: pastEvents, ...rest };
@@ -136,8 +138,8 @@ export function usePendingAssignments() {
   
   const pendingAssignments = allEvents?.filter(assignment => 
     assignment.status === "pending" &&
-    assignment.event?.date && 
-    assignment.event.date >= today &&
+    assignment.event?.start_date && 
+    assignment.event.start_date >= today &&
     assignment.event.status === "DISETUJUI"
   );
 

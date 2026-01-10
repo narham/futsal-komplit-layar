@@ -120,7 +120,8 @@ const EventSubmission = () => {
       // Create event
       const eventData = await createEvent.mutateAsync({
         name: formData.eventName,
-        date: format(eventDate, "yyyy-MM-dd"),
+        start_date: format(eventDate, "yyyy-MM-dd"),
+        end_date: format(eventDate, "yyyy-MM-dd"),
         location: formData.location,
         description: formData.description || undefined,
         category: formData.category || undefined,

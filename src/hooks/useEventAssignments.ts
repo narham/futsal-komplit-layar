@@ -30,7 +30,8 @@ export interface EventAssignment {
   event?: {
     id: string;
     name: string;
-    date: string;
+    start_date: string;
+    end_date: string;
     status: string;
   } | null;
   cancelled_by_profile?: {
@@ -89,7 +90,7 @@ export function useAvailableReferees(eventId: string) {
       // Get event date first
       const { data: event, error: eventError } = await supabase
         .from("events")
-        .select("date, status")
+        .select("start_date, end_date, status")
         .eq("id", eventId)
         .single();
 
@@ -110,16 +111,24 @@ export function useAvailableReferees(eventId: string) {
         .from("event_assignments")
         .select(`
           referee_id,
-          event:event_id (date)
+          event:event_id (start_date, end_date)
         `)
         .neq("status", "cancelled");
 
       if (conflictError) throw conflictError;
 
-      // Find referees with conflicts on the same date
+      // Find referees with conflicts on overlapping dates
       const refereesWithConflicts = new Set(
         conflictingAssignments
-          ?.filter(a => a.event?.date === event.date)
+          ?.filter(a => {
+            if (!a.event?.start_date || !event.start_date) return false;
+            // Check for date overlap
+            const aStart = a.event.start_date;
+            const aEnd = a.event.end_date || a.event.start_date;
+            const eStart = event.start_date;
+            const eEnd = event.end_date || event.start_date;
+            return aStart <= eEnd && aEnd >= eStart;
+          })
           .map(a => a.referee_id) || []
       );
 
@@ -164,7 +173,8 @@ export function useRefereeAssignments(refereeId: string) {
           event:event_id (
             id,
             name,
-            date,
+            start_date,
+            end_date,
             status,
             location,
             kabupaten_kota:kabupaten_kota_id (id, name)
@@ -316,7 +326,7 @@ export function useConfirmAssignment() {
       // Verify the assignment belongs to current user
       const { data: assignment, error: fetchError } = await supabase
         .from("event_assignments")
-        .select("*, event:event_id (date, status)")
+        .select("*, event:event_id (start_date, end_date, status)")
         .eq("id", assignmentId)
         .eq("referee_id", user?.id)
         .maybeSingle();
@@ -327,7 +337,7 @@ export function useConfirmAssignment() {
       }
 
       // Check if event hasn't started yet
-      const eventDate = new Date(assignment.event?.date || "");
+      const eventDate = new Date(assignment.event?.start_date || "");
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       

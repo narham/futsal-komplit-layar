@@ -197,7 +197,7 @@ export default function RefereeAssignment() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span>
-                    {format(new Date(event.date), "EEEE, dd MMMM yyyy", { locale: localeId })}
+                    {format(new Date(event.start_date), "EEEE, dd MMMM yyyy", { locale: localeId })}
                   </span>
                 </div>
                 {event.location && (

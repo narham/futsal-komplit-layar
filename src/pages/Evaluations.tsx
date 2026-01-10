@@ -169,10 +169,10 @@ export default function Evaluations() {
                           <StatusBadge status="warning">Draft</StatusBadge>
                         </div>
                         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          {item.event?.date && (
+                          {item.event?.start_date && (
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(item.event.date), "d MMM yyyy", { locale: localeId })}
+                              {format(new Date(item.event.start_date), "d MMM yyyy", { locale: localeId })}
                             </span>
                           )}
                           {item.event?.location && (
@@ -247,10 +247,10 @@ export default function Evaluations() {
                           </div>
                         </div>
                         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          {item.event?.date && (
+                          {item.event?.start_date && (
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(item.event.date), "d MMM yyyy", { locale: localeId })}
+                              {format(new Date(item.event.start_date), "d MMM yyyy", { locale: localeId })}
                             </span>
                           )}
                           {item.submitted_at && (

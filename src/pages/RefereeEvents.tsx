@@ -125,7 +125,7 @@ export default function RefereeEvents() {
     const event = assignment.event;
     if (!event) return null;
 
-    const isPastEvent = new Date(event.date) < new Date() || event.status === "SELESAI";
+    const isPastEvent = new Date(event.end_date) < new Date() || event.status === "SELESAI";
     const honorStatus = getHonorStatusLabel(assignment.honor?.status);
     const needsHonorSubmission = isPastEvent && !assignment.honor && assignment.status === "confirmed";
 
@@ -147,7 +147,7 @@ export default function RefereeEvents() {
           <div className="space-y-1.5 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <Calendar className="h-3.5 w-3.5" />
-              <span>{format(new Date(event.date), "EEEE, dd MMMM yyyy", { locale: id })}</span>
+              <span>{format(new Date(event.start_date), "EEEE, dd MMMM yyyy", { locale: id })}</span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-3.5 w-3.5" />

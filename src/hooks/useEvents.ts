@@ -7,7 +7,8 @@ export type EventStatus = "DIAJUKAN" | "DISETUJUI" | "DITOLAK" | "SELESAI";
 export interface Event {
   id: string;
   name: string;
-  date: string;
+  start_date: string;
+  end_date: string;
   location: string | null;
   category: string | null;
   status: EventStatus;
@@ -31,7 +32,7 @@ export interface Event {
 export interface EventApproval {
   id: string;
   event_id: string;
-  action: "SUBMIT" | "APPROVE" | "REJECT" | "COMPLETE" | "REVISION_REQUEST";
+  action: "SUBMIT" | "APPROVE" | "REJECT" | "COMPLETE" | "AUTO_COMPLETE" | "REVISION_REQUEST";
   from_status: string | null;
   to_status: string;
   notes: string | null;
@@ -55,7 +56,7 @@ export function useEvents(filters?: { status?: EventStatus; kabupatenKotaId?: st
           creator:created_by (id, full_name),
           kabupaten_kota:kabupaten_kota_id (id, name)
         `)
-        .order("date", { ascending: false });
+        .order("start_date", { ascending: false });
 
       // Filter deleted events unless explicitly requested
       if (!filters?.includeDeleted) {
@@ -157,7 +158,8 @@ export function useCreateEvent() {
   return useMutation({
     mutationFn: async (event: {
       name: string;
-      date: string;
+      start_date: string;
+      end_date: string;
       location?: string;
       category?: string;
       description?: string;
@@ -170,7 +172,8 @@ export function useCreateEvent() {
         .from("events")
         .insert({
           name: event.name,
-          date: event.date,
+          start_date: event.start_date,
+          end_date: event.end_date,
           location: event.location,
           category: event.category,
           description: event.description,
@@ -492,9 +495,9 @@ export function useCheckDuplicateEvent() {
     }) => {
       let query = supabase
         .from("events")
-        .select("id, name, date")
+        .select("id, name, start_date")
         .eq("name", name.trim())
-        .eq("date", date)
+        .eq("start_date", date)
         .is("deleted_at", null);
 
       if (excludeEventId) {
