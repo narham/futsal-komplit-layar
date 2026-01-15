@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   CalendarDays,
-  Wallet,
+  BookOpen,
   MessageSquare,
   User,
 } from "lucide-react";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { icon: LayoutDashboard, label: "Home", path: "/referee" },
   { icon: CalendarDays, label: "Event", path: "/referee/events" },
-  { icon: Wallet, label: "Honor", path: "/referee/honor" },
+  { icon: BookOpen, label: "Belajar", path: "/referee/learning" },
   { icon: MessageSquare, label: "Diskusi", path: "/referee/discussions" },
   { icon: User, label: "Profil", path: "/referee/profile" },
 ];

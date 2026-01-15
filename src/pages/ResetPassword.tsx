@@ -220,7 +220,7 @@ export default function ResetPassword() {
 
         <div className="text-center mt-6 pb-8">
           <p className="text-xs text-muted-foreground">
-            © 2024 Asosiasi Futsal Provinsi Sulawesi Selatan
+            © 2024 Federasi Futsal Sulawesi Selatan
           </p>
         </div>
       </div>

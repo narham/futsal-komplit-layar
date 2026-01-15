@@ -99,14 +99,14 @@ export default function PendingApproval() {
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   <Mail className="h-4 w-4" />
-                  admin@afpsulsel.org / sulsel.afp@gmail.com
+                  admin@ffss.id
                 </a>
                 <a
-                  href="tel:+6282277770241"
+                  href="tel:+6281234567890"
                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   <Phone className="h-4 w-4" />
-                  +62 822-7777-0241 / sulfitrah
+                  +62 812-3456-7890
                 </a>
               </div>
             </div>
@@ -126,7 +126,7 @@ export default function PendingApproval() {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-xs text-muted-foreground">
-            © 2024 Asosiasi Futsal Provinsi Sulawesi Selatan
+            © 2024 Federasi Futsal Sulawesi Selatan
           </p>
         </div>
       </div>

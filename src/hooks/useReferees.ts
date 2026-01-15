@@ -96,17 +96,17 @@ export function useRefereeStats() {
       const inactive = total - active;
 
       // Count by license
-      const level1 = referees?.filter((r: Referee) => r.license_level === "Level 1").length || 0;
-      const level2 = referees?.filter((r: Referee) => r.license_level === "Level 2").length || 0;
-      const level3 = referees?.filter((r: Referee) => r.license_level === "Level 3").length || 0;
+      const licenseA = referees?.filter((r: Referee) => r.license_level === "Lisensi A").length || 0;
+      const licenseB = referees?.filter((r: Referee) => r.license_level === "Lisensi B").length || 0;
+      const licenseC = referees?.filter((r: Referee) => r.license_level === "Lisensi C").length || 0;
 
       return {
         total,
         active,
         inactive,
-        level1,
-        level2,
-        level3,
+        licenseA,
+        licenseB,
+        licenseC,
       };
     },
   });
@@ -181,19 +181,22 @@ export function useToggleRefereeStatus() {
 
 // License level options
 export const LICENSE_LEVELS = [
-  { value: "Level 1", label: "Level 1" },
-  { value: "Level 2", label: "Level 2" },
-  { value: "Level 3", label: "Level 3" },
+  { value: "Lisensi A", label: "Lisensi A" },
+  { value: "Lisensi B", label: "Lisensi B" },
+  { value: "Lisensi C", label: "Lisensi C" },
+  { value: "Lisensi D", label: "Lisensi D" },
 ];
 
 export function getLicenseBadgeColor(level: string | null) {
   switch (level) {
-    case "Level 1":
+    case "Lisensi A":
       return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "Level 2":
+    case "Lisensi B":
       return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Level 3":
-      return "bg-green-100 text-green-800 border-green-200";    
+    case "Lisensi C":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "Lisensi D":
+      return "bg-gray-100 text-gray-800 border-gray-200";
     default:
       return "bg-gray-100 text-gray-600 border-gray-200";
   }

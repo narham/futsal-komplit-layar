@@ -265,11 +265,8 @@ const EventSubmission = () => {
                   <SelectContent>
                     <SelectItem value="liga">Liga</SelectItem>
                     <SelectItem value="turnamen">Turnamen</SelectItem>
-                    <SelectItem value="pelajar">Antar Pelajar</SelectItem>
-                    <SelectItem value="sekolah">Antar Sekolah</SelectItem>
-                    <SelectItem value="mahasiswa">Antar Mahasiswa</SelectItem>
-                    <SelectItem value="instansi">Antar Instansi</SelectItem>
-                    <SelectItem value="umum">Umum</SelectItem>
+                    <SelectItem value="friendly">Pertandingan Persahabatan</SelectItem>
+                    <SelectItem value="pelajar">Pelajar</SelectItem>
                     <SelectItem value="lainnya">Lainnya</SelectItem>
                   </SelectContent>
                 </Select>
